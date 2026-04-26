@@ -4,10 +4,9 @@ import Link from 'next/link'
 import type { User } from '@/lib/models/user'
 import { ROUTES } from '@/lib/constants/routes'
 
-async function getUser(): Promise<User | null> {
-  const cookieStore = await cookies()
+async function getUser(cookieHeader: string): Promise<User | null> {
   const res = await fetch(`${process.env.USER_SERVICE_URL}/users/me`, {
-    headers: { Cookie: cookieStore.toString() },
+    headers: { Cookie: cookieHeader },
     cache: 'no-store',
   })
   if (!res.ok) return null
@@ -15,8 +14,18 @@ async function getUser(): Promise<User | null> {
 }
 
 export default async function DashboardPage() {
-  const user = await getUser()
-  if (!user) redirect(ROUTES.login)
+  const cookieStore = await cookies()
+  const cookieHeader = cookieStore.toString()
+  const hasToken = cookieStore.has('access_token')
+  const user = await getUser(cookieHeader)
+
+  if (!user) {
+    // Stale token: cookie exists but the user service rejected it.
+    // Redirect via the logout endpoint to clear the cookie first, otherwise
+    // the proxy middleware will immediately redirect /login back to /dashboard.
+    if (hasToken) redirect('/api/auth/logout')
+    redirect(ROUTES.login)
+  }
 
   const total = user.wins + user.losses + user.draws
   const winRate = total > 0 ? Math.round((user.wins / total) * 100) : 0
