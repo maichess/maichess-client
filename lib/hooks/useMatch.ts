@@ -9,13 +9,19 @@ export function useMatch(initialMatch: Match) {
   const [moveError, setMoveError] = useState<string | null>(null)
 
   function applyMoveEvent(event: MoveEvent) {
-    setMatch((prev) => ({
-      ...prev,
-      current_fen: event.resulting_fen,
-      moves: [...prev.moves, event.move],
-      white_time_ms: event.white_time_ms,
-      black_time_ms: event.black_time_ms,
-    }))
+    setMatch((prev) => {
+      // event.index is 1-based (Moves.Count after appending on the server).
+      // Skip if we already have this move or a later one to avoid out-of-order
+      // socket events (e.g. the human's move_made arriving after the bot's).
+      if (event.index <= prev.moves.length) return prev
+      return {
+        ...prev,
+        current_fen: event.resulting_fen,
+        moves: [...prev.moves, event.move],
+        white_time_ms: event.white_time_ms,
+        black_time_ms: event.black_time_ms,
+      }
+    })
   }
 
   function applyMatchEnded(event: MatchEndedEvent) {
@@ -38,7 +44,9 @@ export function useMatch(initialMatch: Match) {
       }
       if (!res.ok) return false
       const updated: Match = await res.json()
-      setMatch(updated)
+      // Only apply the HTTP response if we haven't already advanced past it via
+      // a socket event (e.g. bot's move_made arriving before this response).
+      setMatch((prev) => updated.moves.length > prev.moves.length ? updated : prev)
       return true
     } finally {
       setSubmitting(false)

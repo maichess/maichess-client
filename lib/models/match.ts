@@ -19,6 +19,7 @@ export interface Match {
 }
 
 export interface MoveEvent {
+  index: number
   move: string
   resulting_fen: string
   player: { user_id: string } | { bot_id: string }
