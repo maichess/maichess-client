@@ -58,8 +58,13 @@ export function useMatchmaking() {
         setError('Failed to join queue.')
         return
       }
-      const { queue_token } = await res.json()
+      const { queue_token, match_id } = await res.json()
       queueTokenRef.current = queue_token
+      if (match_id) {
+        stopListening()
+        router.push(ROUTES.match(match_id))
+        return
+      }
     } catch {
       stopListening()
       setState('error')
