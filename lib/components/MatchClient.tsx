@@ -137,12 +137,26 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
 // --- helpers ---
 
 function isPawnPromotion(fen: string, src: string, tgt: string): boolean {
+  const piece = pieceAt(fen, src)
+  if (piece !== 'P' && piece !== 'p') return false
   const rank = tgt[1]
-  // White pawn reaching rank 8, black pawn reaching rank 1
-  return (
-    (rank === '8' && src[1] === '7') ||
-    (rank === '1' && src[1] === '2')
-  )
+  return (piece === 'P' && rank === '8') || (piece === 'p' && rank === '1')
+}
+
+function pieceAt(fen: string, square: string): string | null {
+  const file = square.charCodeAt(0) - 'a'.charCodeAt(0)
+  const rank = 8 - parseInt(square[1])
+  const rows = fen.split(' ')[0].split('/')
+  let col = 0
+  for (const ch of rows[rank]) {
+    if (ch >= '1' && ch <= '8') {
+      col += parseInt(ch)
+    } else {
+      if (col === file) return ch
+      col++
+    }
+  }
+  return null
 }
 
 function inferPromotion(fen: string, src: string, tgt: string): string | null {
