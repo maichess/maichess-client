@@ -30,6 +30,15 @@ export function useMatchmaking() {
   async function joinQueue(request: QueueRequest) {
     setState('waiting')
     setError(null)
+
+    // Ensure the socket is fully connected (and registered in userSockets on
+    // the server) before sending the request. For bot matches the 'matched'
+    // event is emitted immediately, so the user must already be reachable.
+    const socket = getSocket()
+    if (!socket.connected) {
+      await new Promise<void>((resolve) => socket.once('connect', resolve))
+    }
+
     startListening()
     try {
       const res = await fetch('/api/queue', {
