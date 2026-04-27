@@ -1,10 +1,11 @@
 'use client'
 
 import { useSearchParams } from 'next/navigation'
-import { useState, Suspense } from 'react'
+import { useState, Suspense, useEffect } from 'react'
 import { Button } from '@/lib/components/ui/Button'
 import { MatchmakingModal } from '@/lib/components/MatchmakingModal'
 import { useMatchmaking } from '@/lib/hooks/useMatchmaking'
+import { useBots } from '@/lib/hooks/useBots'
 import type { QueueRequest, TimeControl } from '@/lib/models/queue'
 
 const TIME_CONTROLS: { value: TimeControl; label: string; description: string }[] = [
@@ -12,14 +13,6 @@ const TIME_CONTROLS: { value: TimeControl; label: string; description: string }[
   { value: 'blitz', label: 'Blitz', description: '3–10 min' },
   { value: 'rapid', label: 'Rapid', description: '10–60 min' },
   { value: 'classical', label: 'Classical', description: '> 60 min' },
-]
-
-const BOTS = [
-  { id: 'stockfish-1', label: 'Stockfish 1', elo: 800 },
-  { id: 'stockfish-2', label: 'Stockfish 2', elo: 1000 },
-  { id: 'stockfish-3', label: 'Stockfish 3', elo: 1200 },
-  { id: 'stockfish-5', label: 'Stockfish 5', elo: 1500 },
-  { id: 'stockfish-8', label: 'Stockfish 8', elo: 1900 },
 ]
 
 function PlayForm() {
@@ -30,7 +23,14 @@ function PlayForm() {
   const [opponentType, setOpponentType] = useState<'human' | 'bot'>(
     isBot ? 'bot' : 'human'
   )
-  const [selectedBot, setSelectedBot] = useState(BOTS[1].id)
+  const [selectedBot, setSelectedBot] = useState('')
+  const { bots, loading: botsLoading } = useBots()
+
+  useEffect(() => {
+    if (bots.length > 0 && selectedBot === '') {
+      setSelectedBot(bots[0].id)
+    }
+  }, [bots, selectedBot])
 
   const { state, error, joinQueue, cancelQueue } = useMatchmaking()
 
@@ -78,26 +78,30 @@ function PlayForm() {
               <legend className="mb-2 text-sm font-medium text-text-secondary">
                 Select bot
               </legend>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {BOTS.map((bot) => (
-                  <button
-                    key={bot.id}
-                    type="button"
-                    onClick={() => setSelectedBot(bot.id)}
-                    className={[
-                      'rounded-xl border px-3 py-2.5 text-left transition-all cursor-pointer',
-                      selectedBot === bot.id
-                        ? 'border-accent bg-accent/10'
-                        : 'border-border bg-bg-secondary hover:border-accent/40',
-                    ].join(' ')}
-                  >
-                    <div className={`text-sm font-medium ${selectedBot === bot.id ? 'text-accent' : 'text-text-primary'}`}>
-                      {bot.label}
-                    </div>
-                    <div className="text-xs text-text-muted">{bot.elo} ELO</div>
-                  </button>
-                ))}
-              </div>
+              {botsLoading ? (
+                <p className="text-sm text-text-muted">Loading bots…</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {bots.map((bot) => (
+                    <button
+                      key={bot.id}
+                      type="button"
+                      onClick={() => setSelectedBot(bot.id)}
+                      className={[
+                        'rounded-xl border px-3 py-2.5 text-left transition-all cursor-pointer',
+                        selectedBot === bot.id
+                          ? 'border-accent bg-accent/10'
+                          : 'border-border bg-bg-secondary hover:border-accent/40',
+                      ].join(' ')}
+                    >
+                      <div className={`text-sm font-medium ${selectedBot === bot.id ? 'text-accent' : 'text-text-primary'}`}>
+                        {bot.name}
+                      </div>
+                      <div className="text-xs text-text-muted">{bot.elo} ELO</div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </fieldset>
           )}
 
