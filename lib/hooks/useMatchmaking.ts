@@ -4,51 +4,28 @@ import { useCallback, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { QueueRequest } from '@/lib/models/queue'
 import { ROUTES } from '@/lib/constants/routes'
+import { getSocket } from './useSocket'
 
 type MatchmakingState = 'idle' | 'waiting' | 'matched' | 'error'
-
-const POLL_INTERVAL_MS = 1500
 
 export function useMatchmaking() {
   const router = useRouter()
   const [state, setState] = useState<MatchmakingState>('idle')
   const [error, setError] = useState<string | null>(null)
   const queueTokenRef = useRef<string | null>(null)
-  const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const stopPolling = useCallback(() => {
-    if (pollTimerRef.current) {
-      clearTimeout(pollTimerRef.current)
-      pollTimerRef.current = null
-    }
+  const stopListening = useCallback(() => {
+    const socket = getSocket()
+    socket.off('matched')
   }, [])
 
-  const pollStatus = useCallback(
-    async (token: string) => {
-      try {
-        const res = await fetch(`/api/queue/${token}/status`)
-        if (!res.ok) {
-          stopPolling()
-          setState('error')
-          setError('Lost connection to queue.')
-          return
-        }
-        const data = await res.json()
-        if (data.status === 'matched' && data.match_id) {
-          setState('matched')
-          stopPolling()
-          router.push(ROUTES.match(data.match_id))
-        } else {
-          pollTimerRef.current = setTimeout(() => pollStatus(token), POLL_INTERVAL_MS)
-        }
-      } catch {
-        stopPolling()
-        setState('error')
-        setError('Network error. Please try again.')
-      }
-    },
-    [router, stopPolling]
-  )
+  const startListening = useCallback(() => {
+    const socket = getSocket()
+    socket.once('matched', (data: { match_id: string }) => {
+      setState('matched')
+      router.push(ROUTES.match(data.match_id))
+    })
+  }, [router])
 
   async function joinQueue(request: QueueRequest) {
     setState('waiting')
@@ -71,7 +48,7 @@ export function useMatchmaking() {
       }
       const { queue_token } = await res.json()
       queueTokenRef.current = queue_token
-      pollStatus(queue_token)
+      startListening()
     } catch {
       setState('error')
       setError('Network error. Please try again.')
@@ -79,7 +56,7 @@ export function useMatchmaking() {
   }
 
   async function cancelQueue() {
-    stopPolling()
+    stopListening()
     const token = queueTokenRef.current
     if (token) {
       await fetch(`/api/queue/${token}`, { method: 'DELETE' }).catch(() => {})

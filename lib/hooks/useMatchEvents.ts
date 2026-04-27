@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import type { MoveEvent, MatchEndedEvent } from '@/lib/models/match'
+import { getSocket } from './useSocket'
 
 export function useMatchEvents(
   matchId: string,
@@ -9,29 +10,22 @@ export function useMatchEvents(
   onEnd: (event: MatchEndedEvent) => void
 ) {
   useEffect(() => {
-    const es = new EventSource(`/api/matches/${matchId}/events`)
+    const socket = getSocket()
 
-    es.addEventListener('move_made', (e) => {
-      try {
-        onMove(JSON.parse(e.data) as MoveEvent)
-      } catch {
-        // ignore malformed event
-      }
-    })
-
-    es.addEventListener('match_ended', (e) => {
-      try {
-        onEnd(JSON.parse(e.data) as MatchEndedEvent)
-      } catch {
-        // ignore malformed event
-      }
-      es.close()
-    })
-
-    es.onerror = () => {
-      es.close()
+    function handleMove(event: MoveEvent) {
+      onMove(event)
     }
 
-    return () => es.close()
+    function handleEnd(event: MatchEndedEvent) {
+      onEnd(event)
+    }
+
+    socket.on('move_made', handleMove)
+    socket.on('match_ended', handleEnd)
+
+    return () => {
+      socket.off('move_made', handleMove)
+      socket.off('match_ended', handleEnd)
+    }
   }, [matchId, onMove, onEnd])
 }
