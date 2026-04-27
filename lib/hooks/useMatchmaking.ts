@@ -31,11 +31,13 @@ export function useMatchmaking() {
     setState('waiting')
     setError(null)
 
-    // Ensure the socket is fully connected (and registered in userSockets on
-    // the server) before sending the request. For bot matches the 'matched'
-    // event is emitted immediately, so the user must already be reachable.
+    // For human matches the 'matched' event is the only delivery mechanism, so
+    // the socket must be registered on the server before the request is sent.
+    // For bot matches match_id is returned directly in the HTTP response, so
+    // blocking on socket connectivity is unnecessary and can cause the spinner
+    // to hang indefinitely if the socket service is temporarily unreachable.
     const socket = getSocket()
-    if (!socket.connected) {
+    if (request.opponent.type === 'human' && !socket.connected) {
       await new Promise<void>((resolve) => socket.once('connect', resolve))
     }
 
