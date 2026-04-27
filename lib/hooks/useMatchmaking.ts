@@ -30,6 +30,7 @@ export function useMatchmaking() {
   async function joinQueue(request: QueueRequest) {
     setState('waiting')
     setError(null)
+    startListening()
     try {
       const res = await fetch('/api/queue', {
         method: 'POST',
@@ -37,19 +38,21 @@ export function useMatchmaking() {
         body: JSON.stringify(request),
       })
       if (res.status === 409) {
+        stopListening()
         setState('error')
         setError('Already in queue. Please cancel first.')
         return
       }
       if (!res.ok) {
+        stopListening()
         setState('error')
         setError('Failed to join queue.')
         return
       }
       const { queue_token } = await res.json()
       queueTokenRef.current = queue_token
-      startListening()
     } catch {
+      stopListening()
       setState('error')
       setError('Network error. Please try again.')
     }
