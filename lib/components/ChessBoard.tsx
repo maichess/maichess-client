@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo } from 'react'
 import { Chessboard } from 'react-chessboard'
+import { useTheme } from '@/lib/hooks/useTheme'
 // These types mirror the react-chessboard callback shapes (not re-exported from the package index)
 type SquareHandlerArgs = { piece: unknown; square: string }
 type PieceDropHandlerArgs = { piece: unknown; sourceSquare: string; targetSquare: string | null }
@@ -30,6 +31,19 @@ export function ChessBoard({
   onPieceDrop,
   disabled,
 }: ChessBoardProps) {
+  const { theme } = useTheme()
+
+  const lightSquare = useMemo(
+    () => getCssVar('--sq-light') || '#f0d9b5',
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [theme]
+  )
+  const darkSquare = useMemo(
+    () => getCssVar('--sq-dark') || '#b58863',
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [theme]
+  )
+
   const squareStyles = useMemo(() => {
     const styles: Record<string, React.CSSProperties> = {}
 
@@ -48,7 +62,7 @@ export function ChessBoard({
     }
 
     return styles
-  }, [selectedSquare, legalMoves])
+  }, [selectedSquare, legalMoves, theme])
 
   const handleSquareClick = useCallback(
     ({ square }: SquareHandlerArgs) => {
@@ -80,12 +94,8 @@ export function ChessBoard({
             borderRadius: '8px',
             boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
           },
-          lightSquareStyle: {
-            backgroundColor: getCssVar('--sq-light') || '#f0d9b5',
-          },
-          darkSquareStyle: {
-            backgroundColor: getCssVar('--sq-dark') || '#b58863',
-          },
+          lightSquareStyle: { backgroundColor: lightSquare },
+          darkSquareStyle: { backgroundColor: darkSquare },
           animationDurationInMs: 150,
         }}
       />

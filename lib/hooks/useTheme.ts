@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { DEFAULT_THEME, THEMES, type Theme } from '@/lib/constants/themes'
 
 function getInitialTheme(): Theme {
@@ -13,6 +13,17 @@ function getInitialTheme(): Theme {
 
 export function useTheme() {
   const [theme, setThemeState] = useState<Theme>(getInitialTheme)
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      const attr = document.documentElement.getAttribute('data-theme')
+      if (attr && (THEMES as readonly string[]).includes(attr)) {
+        setThemeState(attr as Theme)
+      }
+    })
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+    return () => observer.disconnect()
+  }, [])
 
   function setTheme(name: Theme) {
     document.documentElement.setAttribute('data-theme', name)
