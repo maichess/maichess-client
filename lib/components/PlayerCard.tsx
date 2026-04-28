@@ -18,34 +18,36 @@ export function PlayerCard({ player, timeMs, lastMoveAtMs, isActive, side, elo }
   const [displayTime, setDisplayTime] = useState(timeMs)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const lastTickRef = useRef<number>(0)
+  const isActiveRef = useRef(isActive)
+  isActiveRef.current = isActive
 
-  // Run a client-side countdown when it's this player's turn.
-  // Subtract elapsed time since the last server-acknowledged move so that a
-  // page reload or reconnect shows the correct remaining time rather than the
-  // stale value stored at the last move.
+  // Sync displayTime only when the server sends an authoritative time update.
+  // isActive is read via ref so a turn change alone (while the server response is
+  // in flight) does not snap the display back to the stale server value.
   useEffect(() => {
-    const alreadyElapsed = isActive ? Math.max(0, Date.now() - lastMoveAtMs) : 0
-    const initial = Math.max(0, timeMs - alreadyElapsed)
+    const alreadyElapsed = isActiveRef.current ? Math.max(0, Date.now() - lastMoveAtMs) : 0
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setDisplayTime(initial)
+    setDisplayTime(Math.max(0, timeMs - alreadyElapsed))
     lastTickRef.current = Date.now()
+  }, [timeMs, lastMoveAtMs])
 
+  // Start or stop the countdown interval when the active player changes.
+  useEffect(() => {
     if (!isActive) {
       if (intervalRef.current) clearInterval(intervalRef.current)
       return
     }
-
+    lastTickRef.current = Date.now()
     intervalRef.current = setInterval(() => {
       const now = Date.now()
       const elapsed = now - lastTickRef.current
       lastTickRef.current = now
       setDisplayTime((prev) => Math.max(0, prev - elapsed))
     }, 100)
-
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [timeMs, lastMoveAtMs, isActive])
+  }, [isActive])
 
   const isBot = !isUserPlayer(player)
   const displayName = playerDisplayName(player)

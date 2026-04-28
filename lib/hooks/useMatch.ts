@@ -34,7 +34,14 @@ export function useMatch(initialMatch: Match) {
   }
 
   function applyMatchEnded(event: MatchEndedEvent) {
-    setMatch((prev) => ({ ...prev, status: event.status }))
+    setMatch((prev) => {
+      const update: Partial<Match> = { status: event.status }
+      if (event.reason === 'timeout') {
+        if (event.status === 'white_won') update.black_time_ms = 0
+        else if (event.status === 'black_won') update.white_time_ms = 0
+      }
+      return { ...prev, ...update }
+    })
   }
 
   async function makeMove(uci: string): Promise<boolean> {
