@@ -35,3 +35,23 @@ export function hasNoLegalMoves(fen: string): boolean {
     return false
   }
 }
+
+/**
+ * Applies a UCI move to a FEN string and returns the resulting FEN.
+ * Returns null if the move is illegal or the FEN is invalid.
+ * Used for optimistic UI updates — the server is authoritative.
+ */
+export function applyMove(fen: string, uci: string): string | null {
+  try {
+    const chess = new Chess(fen)
+    const result = chess.move({
+      from: uci.slice(0, 2),
+      to: uci.slice(2, 4),
+      promotion: uci[4],
+    })
+    if (!result) return null
+    return chess.fen()
+  } catch {
+    return null
+  }
+}

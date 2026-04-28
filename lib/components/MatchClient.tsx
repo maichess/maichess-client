@@ -19,7 +19,7 @@ interface MatchClientProps {
 }
 
 export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
-  const { match, makeMove, resign, applyMoveEvent, applyMatchEnded, submitting } =
+  const { match, displayFen, makeMove, resign, applyMoveEvent, applyMatchEnded, submitting } =
     useMatch(initialMatch)
 
   const { legalMoves, selectedSquare, fetchLegalMoves, clearSelection } =
@@ -33,8 +33,9 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
     return 'white'
   }, [viewerUserId, match.white, match.black])
 
-  // Determine if it's the viewer's turn
-  const activeColor = getActiveColor(match.current_fen)
+  // Base turn detection on displayFen so an optimistic move instantly disables the
+  // board (active color flips to the opponent) without waiting for server confirmation.
+  const activeColor = getActiveColor(displayFen)
   const myColor = orientation
   const isMyTurn = match.status === 'ongoing' && activeColor === myColor[0]
   const boardDisabled = !isMyTurn || submitting
@@ -91,7 +92,7 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
         />
 
         <ChessBoard
-          fen={match.current_fen}
+          fen={displayFen}
           orientation={orientation}
           legalMoves={legalMoves}
           selectedSquare={selectedSquare}
