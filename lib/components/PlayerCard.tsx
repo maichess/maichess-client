@@ -8,19 +8,26 @@ import { msToClockString, isCriticalTime } from '@/lib/utils/time'
 interface PlayerCardProps {
   player: Player
   timeMs: number
+  lastMoveAtMs: number
   isActive: boolean
   side: 'white' | 'black'
   elo?: number
 }
 
-export function PlayerCard({ player, timeMs, isActive, side, elo }: PlayerCardProps) {
+export function PlayerCard({ player, timeMs, lastMoveAtMs, isActive, side, elo }: PlayerCardProps) {
   const [displayTime, setDisplayTime] = useState(timeMs)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const lastTickRef = useRef<number>(Date.now())
+  const lastTickRef = useRef<number>(0)
 
-  // Run a client-side countdown when it's this player's turn
+  // Run a client-side countdown when it's this player's turn.
+  // Subtract elapsed time since the last server-acknowledged move so that a
+  // page reload or reconnect shows the correct remaining time rather than the
+  // stale value stored at the last move.
   useEffect(() => {
-    setDisplayTime(timeMs)
+    const alreadyElapsed = isActive ? Math.max(0, Date.now() - lastMoveAtMs) : 0
+    const initial = Math.max(0, timeMs - alreadyElapsed)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDisplayTime(initial)
     lastTickRef.current = Date.now()
 
     if (!isActive) {
@@ -38,7 +45,7 @@ export function PlayerCard({ player, timeMs, isActive, side, elo }: PlayerCardPr
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [timeMs, isActive])
+  }, [timeMs, lastMoveAtMs, isActive])
 
   const isBot = !isUserPlayer(player)
   const displayName = playerDisplayName(player)

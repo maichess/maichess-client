@@ -33,36 +33,31 @@ export function ChessBoard({
 }: ChessBoardProps) {
   const { theme } = useTheme()
 
-  const lightSquare = useMemo(
-    () => getCssVar('--sq-light') || '#f0d9b5',
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [theme]
-  )
-  const darkSquare = useMemo(
-    () => getCssVar('--sq-dark') || '#b58863',
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [theme]
-  )
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const lightSquare = useMemo(() => getCssVar('--sq-light') || '#f0d9b5', [theme])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const darkSquare = useMemo(() => getCssVar('--sq-dark') || '#b58863', [theme])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const highlightColor = useMemo(() => getCssVar('--sq-highlight') || 'rgba(246,246,105,0.5)', [theme])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const legalColor = useMemo(() => getCssVar('--sq-legal') || 'rgba(0,0,0,0.14)', [theme])
 
   const squareStyles = useMemo(() => {
     const styles: Record<string, React.CSSProperties> = {}
 
     if (selectedSquare) {
-      styles[selectedSquare] = {
-        background: getCssVar('--sq-highlight') || 'rgba(246,246,105,0.5)',
-      }
+      styles[selectedSquare] = { background: highlightColor }
     }
 
     for (const move of legalMoves) {
       const tgt = move.slice(2, 4)
-      const legal = getCssVar('--sq-legal') || 'rgba(0,0,0,0.14)'
       styles[tgt] = {
-        background: `radial-gradient(circle, ${legal} 25%, transparent 25%)`,
+        background: `radial-gradient(circle, ${legalColor} 25%, transparent 25%)`,
       }
     }
 
     return styles
-  }, [selectedSquare, legalMoves, theme])
+  }, [selectedSquare, legalMoves, highlightColor, legalColor])
 
   const handleSquareClick = useCallback(
     ({ square }: SquareHandlerArgs) => {

@@ -16,6 +16,7 @@ export interface Match {
   time_control: TimeControl
   white_time_ms: number
   black_time_ms: number
+  last_move_at_ms: number
   analyzable?: boolean
 }
 

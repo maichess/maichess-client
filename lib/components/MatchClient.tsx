@@ -87,6 +87,7 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
         <PlayerCard
           player={topPlayer}
           timeMs={topTimeMs}
+          lastMoveAtMs={match.last_move_at_ms}
           isActive={topActive && !isGameOver}
           side={topSide}
         />
@@ -104,6 +105,7 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
         <PlayerCard
           player={bottomPlayer}
           timeMs={bottomTimeMs}
+          lastMoveAtMs={match.last_move_at_ms}
           isActive={bottomActive && !isGameOver}
           side={bottomSide}
         />

@@ -16,6 +16,7 @@ export function useMatch(initialMatch: Match) {
     // Server confirmed (or superseded) our optimistic state — clear it so the
     // authoritative FEN takes over.
     setOptimisticFen(null)
+    const arrivedAt = Date.now()
     setMatch((prev) => {
       // event.index is 1-based (Moves.Count after appending on the server).
       // Skip if we already have this move or a later one to avoid out-of-order
@@ -27,6 +28,7 @@ export function useMatch(initialMatch: Match) {
         moves: [...prev.moves, event.move],
         white_time_ms: event.white_time_ms,
         black_time_ms: event.black_time_ms,
+        last_move_at_ms: arrivedAt,
       }
     })
   }
