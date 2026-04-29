@@ -1,4 +1,4 @@
-import { Chess } from 'chess.js'
+import { Chess, type Square } from 'chess.js'
 
 /**
  * Returns the active color from a FEN string: 'w' or 'b'
@@ -34,6 +34,33 @@ export function hasNoLegalMoves(fen: string): boolean {
   } catch {
     return false
   }
+}
+
+/**
+ * Returns all legal UCI moves from a given square, or all legal moves if no
+ * square is specified. Used in analysis mode to compute moves locally.
+ */
+export function getLegalMovesFromSquare(fen: string, square: string): string[] {
+  try {
+    const chess = new Chess(fen)
+    const moves = chess.moves({ verbose: true, square: square as Square })
+    return (moves as Array<{ from: string; to: string; promotion?: string }>)
+      .map((m) => m.from + m.to + (m.promotion ?? ''))
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Converts a centipawn evaluation (from the moving side's perspective) to a
+ * display string from white's perspective (positive = white winning).
+ */
+export function formatEval(evalCp: number, fen: string): string {
+  const activeColor = getActiveColor(fen)
+  const fromWhite = activeColor === 'w' ? evalCp : -evalCp
+  const pawns = fromWhite / 100
+  const sign = pawns >= 0 ? '+' : ''
+  return `${sign}${pawns.toFixed(2)}`
 }
 
 /**

@@ -64,6 +64,12 @@ export default async function DashboardPage() {
             description="Challenge a computer opponent of your choice"
             icon="🤖"
           />
+          <PlayOption
+            href={ROUTES.analysis}
+            title="Analyse"
+            description="Import and analyse games with engine assistance"
+            icon="♟"
+          />
         </div>
       </div>
     </div>
