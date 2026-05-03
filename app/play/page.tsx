@@ -98,6 +98,7 @@ function PlayForm() {
                         {bot.name}
                       </div>
                       <div className="text-xs text-text-muted">{bot.elo} ELO</div>
+                      <div className="mt-1 text-xs text-text-muted line-clamp-3">{bot.description}</div>
                     </button>
                   ))}
                 </div>
