@@ -88,7 +88,7 @@ function PlayForm() {
                       type="button"
                       onClick={() => setSelectedBot(bot.id)}
                       className={[
-                        'rounded-xl border px-3 py-2.5 text-left transition-all cursor-pointer',
+                        'group relative rounded-xl border px-3 py-2.5 text-left transition-all cursor-pointer',
                         selectedBot === bot.id
                           ? 'border-accent bg-accent/10'
                           : 'border-border bg-bg-secondary hover:border-accent/40',
@@ -99,6 +99,9 @@ function PlayForm() {
                       </div>
                       <div className="text-xs text-text-muted">{bot.elo} ELO</div>
                       <div className="mt-1 text-xs text-text-muted line-clamp-3">{bot.description}</div>
+                      <div className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 w-64 -translate-x-1/2 rounded-lg border border-border bg-bg-primary p-3 text-xs text-text-secondary shadow-xl opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+                        {bot.description}
+                      </div>
                     </button>
                   ))}
                 </div>
