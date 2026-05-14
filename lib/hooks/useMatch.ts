@@ -1,26 +1,29 @@
 'use client'
 
 import { useState } from 'react'
-import type { Match, MoveEvent, MatchEndedEvent } from '@/lib/models/match'
+import type {
+  Match,
+  MoveEvent,
+  MatchEndedEvent,
+  DrawOfferedEvent,
+} from '@/lib/models/match'
 import { applyMove } from '@/lib/utils/fen'
+
+export type PendingDrawOffer = { from: 'me' | 'opponent' }
 
 export function useMatch(initialMatch: Match) {
   const [match, setMatch] = useState<Match>(initialMatch)
   const [submitting, setSubmitting] = useState(false)
   const [moveError, setMoveError] = useState<string | null>(null)
   const [optimisticFen, setOptimisticFen] = useState<string | null>(null)
+  const [pendingDraw, setPendingDraw] = useState<PendingDrawOffer | null>(null)
 
   const displayFen = optimisticFen ?? match.current_fen
 
   function applyMoveEvent(event: MoveEvent) {
-    // Server confirmed (or superseded) our optimistic state — clear it so the
-    // authoritative FEN takes over.
     setOptimisticFen(null)
     const arrivedAt = Date.now()
     setMatch((prev) => {
-      // event.index is 1-based (Moves.Count after appending on the server).
-      // Skip if we already have this move or a later one to avoid out-of-order
-      // socket events (e.g. the human's move_made arriving after the bot's).
       if (event.index <= prev.moves.length) return prev
       return {
         ...prev,
@@ -31,6 +34,8 @@ export function useMatch(initialMatch: Match) {
         last_move_at_ms: arrivedAt,
       }
     })
+    // Any move automatically clears a pending draw offer (server-side rule).
+    setPendingDraw(null)
   }
 
   function applyMatchEnded(event: MatchEndedEvent) {
@@ -42,13 +47,23 @@ export function useMatch(initialMatch: Match) {
       }
       return { ...prev, ...update }
     })
+    setPendingDraw(null)
+  }
+
+  function applyDrawOffered(event: DrawOfferedEvent, viewerUserId: string | null) {
+    if (!viewerUserId) return
+    const offererIsViewer = 'user_id' in event.player && event.player.user_id === viewerUserId
+    setPendingDraw({ from: offererIsViewer ? 'me' : 'opponent' })
+  }
+
+  function applyDrawDeclined() {
+    setPendingDraw(null)
   }
 
   async function makeMove(uci: string): Promise<boolean> {
     setSubmitting(true)
     setMoveError(null)
 
-    // Show the move on the board immediately — the server will confirm or revert it.
     const optimistic = applyMove(match.current_fen, uci)
     if (optimistic) setOptimisticFen(optimistic)
 
@@ -61,7 +76,7 @@ export function useMatch(initialMatch: Match) {
       if (res.status === 400) {
         const data = await res.json()
         setMoveError(data.error ?? 'Illegal move.')
-        setOptimisticFen(null) // revert to confirmed server position
+        setOptimisticFen(null)
         return false
       }
       if (!res.ok) {
@@ -69,9 +84,6 @@ export function useMatch(initialMatch: Match) {
         return false
       }
       const updated: Match = await res.json()
-      // Clear optimistic state — the confirmed server FEN takes over. Only apply
-      // the HTTP response if we haven't already advanced past it via a socket event
-      // (e.g. bot's move_made arriving before this response).
       setOptimisticFen(null)
       setMatch((prev) => updated.moves.length > prev.moves.length ? updated : prev)
       return true
@@ -90,5 +102,49 @@ export function useMatch(initialMatch: Match) {
     }
   }
 
-  return { match, displayFen, makeMove, resign, applyMoveEvent, applyMatchEnded, submitting, moveError }
+  async function offerDraw(): Promise<boolean> {
+    const res = await fetch(`/api/matches/${match.id}/draw-offer`, { method: 'POST' })
+    if (res.ok) {
+      setPendingDraw({ from: 'me' })
+      return true
+    }
+    return false
+  }
+
+  async function acceptDraw(): Promise<boolean> {
+    const res = await fetch(`/api/matches/${match.id}/draw-offer/accept`, { method: 'POST' })
+    if (res.ok) {
+      const updated: Match = await res.json()
+      setMatch(updated)
+      setPendingDraw(null)
+      return true
+    }
+    return false
+  }
+
+  async function declineDraw(): Promise<boolean> {
+    const res = await fetch(`/api/matches/${match.id}/draw-offer`, { method: 'DELETE' })
+    if (res.ok) {
+      setPendingDraw(null)
+      return true
+    }
+    return false
+  }
+
+  return {
+    match,
+    displayFen,
+    makeMove,
+    resign,
+    offerDraw,
+    acceptDraw,
+    declineDraw,
+    applyMoveEvent,
+    applyMatchEnded,
+    applyDrawOffered,
+    applyDrawDeclined,
+    pendingDraw,
+    submitting,
+    moveError,
+  }
 }

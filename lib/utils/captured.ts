@@ -5,7 +5,8 @@ export interface CapturedPieces {
   byWhite: string[]
   // Pieces captured *by* black (i.e. white pieces removed)
   byBlack: string[]
-  // Material differential from white's perspective (positive = white ahead)
+  // Material differential from white's perspective (positive = white ahead),
+  // computed from the pieces currently on the board so promotions are reflected.
   diff: number
 }
 
@@ -35,12 +36,11 @@ export function computeCaptured(startingFen: string, uciMoves: readonly string[]
         else byBlack.push(result.captured)
       }
     } catch {
-      // Skip malformed move histories rather than crashing the UI.
-      return { byWhite, byBlack, diff: materialDiff(byWhite, byBlack) }
+      return { byWhite, byBlack, diff: materialFromBoard(game.fen()) }
     }
   }
 
-  return { byWhite, byBlack, diff: materialDiff(byWhite, byBlack) }
+  return { byWhite, byBlack, diff: materialFromBoard(game.fen()) }
 }
 
 export function pieceGlyph(piece: string): string {
@@ -55,7 +55,19 @@ function parseUci(uci: string): { from: string; to: string; promotion?: string }
   return { from, to, promotion }
 }
 
-function materialDiff(byWhite: string[], byBlack: string[]): number {
-  const sum = (xs: string[]) => xs.reduce((acc, p) => acc + (PIECE_VALUE[p.toLowerCase()] ?? 0), 0)
-  return sum(byWhite) - sum(byBlack)
+// Sums material from the pieces currently on the board (kings excluded) so
+// promotions are reflected — e.g. a queen earned via promotion adds to the
+// advantage, not the pawn that no longer exists.
+function materialFromBoard(fen: string): number {
+  const placement = fen.split(' ')[0]
+  let white = 0
+  let black = 0
+  for (const ch of placement) {
+    const lower = ch.toLowerCase()
+    const value = PIECE_VALUE[lower]
+    if (value === undefined) continue
+    if (ch === lower) black += value
+    else white += value
+  }
+  return white - black
 }

@@ -1,24 +1,26 @@
 'use client'
 
 import { useEffect } from 'react'
-import type { MoveEvent, MatchEndedEvent } from '@/lib/models/match'
+import type {
+  MoveEvent,
+  MatchEndedEvent,
+  DrawOfferedEvent,
+  DrawDeclinedEvent,
+} from '@/lib/models/match'
 import { getSocket } from './useSocket'
 
-export function useMatchEvents(
-  matchId: string,
-  onMove: (event: MoveEvent) => void,
+interface MatchEventHandlers {
+  onMove: (event: MoveEvent) => void
   onEnd: (event: MatchEndedEvent) => void
-) {
+  onDrawOffered?: (event: DrawOfferedEvent) => void
+  onDrawDeclined?: (event: DrawDeclinedEvent) => void
+}
+
+export function useMatchEvents(matchId: string, handlers: MatchEventHandlers) {
+  const { onMove, onEnd, onDrawOffered, onDrawDeclined } = handlers
+
   useEffect(() => {
     const socket = getSocket()
-
-    function handleMove(event: MoveEvent) {
-      onMove(event)
-    }
-
-    function handleEnd(event: MatchEndedEvent) {
-      onEnd(event)
-    }
 
     const subscribe = () => socket.emit('subscribe_match', { match_id: matchId })
 
@@ -28,14 +30,18 @@ export function useMatchEvents(
       socket.once('connect', subscribe)
     }
 
-    socket.on('move_made', handleMove)
-    socket.on('match_ended', handleEnd)
+    socket.on('move_made', onMove)
+    socket.on('match_ended', onEnd)
+    if (onDrawOffered) socket.on('draw_offered', onDrawOffered)
+    if (onDrawDeclined) socket.on('draw_declined', onDrawDeclined)
 
     return () => {
-      socket.off('move_made', handleMove)
-      socket.off('match_ended', handleEnd)
+      socket.off('move_made', onMove)
+      socket.off('match_ended', onEnd)
+      if (onDrawOffered) socket.off('draw_offered', onDrawOffered)
+      if (onDrawDeclined) socket.off('draw_declined', onDrawDeclined)
       socket.off('connect', subscribe)
       socket.emit('unsubscribe_match', { match_id: matchId })
     }
-  }, [matchId, onMove, onEnd])
+  }, [matchId, onMove, onEnd, onDrawOffered, onDrawDeclined])
 }

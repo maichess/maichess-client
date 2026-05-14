@@ -60,6 +60,14 @@ export interface MatchEndedEvent {
   reason: EndReason
 }
 
+export interface DrawOfferedEvent {
+  player: { user_id: string } | { bot_id: string }
+}
+
+export interface DrawDeclinedEvent {
+  player: { user_id: string } | { bot_id: string }
+}
+
 export function isUserPlayer(p: Player): p is UserPlayer {
   return 'user_id' in p
 }

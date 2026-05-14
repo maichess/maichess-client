@@ -51,7 +51,7 @@ export function WatchClient({ initialMatch }: WatchClientProps) {
     })
   }, [])
 
-  useMatchEvents(match.id, onMove, onEnd)
+  useMatchEvents(match.id, { onMove, onEnd })
 
   const gameAreaRef = useRef<HTMLDivElement>(null)
   const prevMovesRef = useRef(initialMatch.moves.length)

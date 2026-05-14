@@ -1,19 +1,21 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { Match } from '@/lib/models/match'
+import type { Match, DrawOfferedEvent } from '@/lib/models/match'
 import { isUserPlayer } from '@/lib/models/match'
 import { applyMove, getActiveColor, getPieceAt } from '@/lib/utils/fen'
 import { useMatch } from '@/lib/hooks/useMatch'
 import { useMatchEvents } from '@/lib/hooks/useMatchEvents'
 import { useLegalMoves } from '@/lib/hooks/useLegalMoves'
 import { usePremove } from '@/lib/hooks/usePremove'
+import { usePromotion } from '@/lib/hooks/usePromotion'
 import { computeCaptured } from '@/lib/utils/captured'
 import { Chess } from 'chess.js'
 import { ChessBoard } from './ChessBoard'
 import { PlayerCard } from './PlayerCard'
 import { MoveList } from './MoveList'
 import { GameStatus } from './GameStatus'
+import { PromotionPicker } from './PromotionPicker'
 import { Button } from './ui/Button'
 
 interface MatchClientProps {
@@ -24,11 +26,22 @@ interface MatchClientProps {
 const INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
 export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
-  const { match, displayFen: liveDisplayFen, makeMove, resign, applyMoveEvent, applyMatchEnded, submitting } =
-    useMatch(initialMatch)
+  const {
+    match,
+    displayFen: liveDisplayFen,
+    makeMove,
+    resign,
+    offerDraw,
+    acceptDraw,
+    declineDraw,
+    applyMoveEvent,
+    applyMatchEnded,
+    applyDrawOffered,
+    applyDrawDeclined,
+    pendingDraw,
+    submitting,
+  } = useMatch(initialMatch)
 
-  // Browse-only review: null = live, otherwise the move index being viewed
-  // (0 = starting position, N = position after the N-th move).
   const [reviewIndex, setReviewIndex] = useState<number | null>(null)
 
   const gameAreaRef = useRef<HTMLDivElement>(null)
@@ -46,6 +59,7 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
     useLegalMoves(match.id)
   const { premove, premoveSource, queuePremove, selectPremoveSource, clearPremove } =
     usePremove()
+  const { pendingPromotion, requestPromotion, clearPromotion } = usePromotion()
 
   const orientation: 'white' | 'black' = useMemo(() => {
     if (!viewerUserId) return 'white'
@@ -61,6 +75,12 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
     return w || b
   }, [viewerUserId, match.white, match.black])
 
+  // Draw offers only make sense in human-vs-human matches.
+  const isHumanVsHuman = useMemo(
+    () => isUserPlayer(match.white) && isUserPlayer(match.black),
+    [match.white, match.black]
+  )
+
   const reviewFen = useMemo(() => {
     if (reviewIndex === null) return null
     return computeFenAtIndex(match.moves, reviewIndex)
@@ -74,17 +94,23 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
   const isOngoing = match.status === 'ongoing'
   const isGameOver = !isOngoing
   const isMyTurn = isOngoing && activeColor === myColor[0] && !isReviewing
-  // Board is fully non-interactive only when reviewing or the game ended.
-  // During the opponent's turn we still accept input — to queue a premove.
   const boardDisabled = isReviewing || isGameOver
   const canPremove = isViewerPlaying && !isMyTurn && !isReviewing && isOngoing
 
-  const onMove = useCallback(applyMoveEvent, [applyMoveEvent])
-  const onEnd = useCallback(applyMatchEnded, [applyMatchEnded])
-  useMatchEvents(match.id, onMove, onEnd)
+  const onMove = useCallback((event: Parameters<typeof applyMoveEvent>[0]) => applyMoveEvent(event), [applyMoveEvent])
+  const onEnd = useCallback((event: Parameters<typeof applyMatchEnded>[0]) => applyMatchEnded(event), [applyMatchEnded])
+  const onDrawOffered = useCallback(
+    (event: DrawOfferedEvent) => applyDrawOffered(event, viewerUserId),
+    [applyDrawOffered, viewerUserId]
+  )
+  const onDrawDeclined = useCallback(() => applyDrawDeclined(), [applyDrawDeclined])
+  useMatchEvents(match.id, {
+    onMove,
+    onEnd,
+    onDrawOffered,
+    onDrawDeclined,
+  })
 
-  // When the opponent's move arrives and it becomes our turn, try to play the
-  // queued premove. If chess.js accepts it, fire makeMove; otherwise discard.
   useEffect(() => {
     if (!premove || !isMyTurn || submitting) return
     const uci = premove.from + premove.to + (premove.promotion ?? '')
@@ -95,10 +121,12 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
     }
   }, [isMyTurn, premove, submitting, match.current_fen, makeMove, clearPremove])
 
-  // Clear any pending premove if the game ends.
   useEffect(() => {
-    if (isGameOver) clearPremove()
-  }, [isGameOver, clearPremove])
+    if (isGameOver) {
+      clearPremove()
+      clearPromotion()
+    }
+  }, [isGameOver, clearPremove, clearPromotion])
 
   const captured = useMemo(() => {
     const visibleMoves = reviewIndex === null ? match.moves : match.moves.slice(0, reviewIndex)
@@ -123,15 +151,21 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
   )
 
   async function handleSquareClick(square: string) {
+    if (pendingPromotion) return
+
     if (isMyTurn) {
       if (
         selectedSquare &&
         legalMoves.some((m) => m.startsWith(selectedSquare) && m.slice(2, 4) === square)
       ) {
+        if (isPawnPromotion(match.current_fen, selectedSquare, square)) {
+          requestPromotion(selectedSquare, square, myColor[0] as 'w' | 'b')
+          clearSelection()
+          return
+        }
         const uci = selectedSquare + square
-        const promotion = inferPromotion(match.current_fen, selectedSquare, square)
         clearSelection()
-        await makeMove(uci + (promotion ? promotion : ''))
+        await makeMove(uci)
         return
       }
       fetchLegalMoves(square)
@@ -140,7 +174,6 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
 
     if (!canPremove) return
 
-    // Premove input: pick a source piece, then a target square.
     if (premoveSource) {
       if (square === premoveSource) {
         clearPremove()
@@ -160,10 +193,16 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
   }
 
   function handlePieceDrop(src: string, tgt: string, promotion = 'q'): boolean {
-    if (boardDisabled) return false
+    if (boardDisabled || pendingPromotion) return false
 
     if (isMyTurn) {
-      const uci = src + tgt + (isPawnPromotion(match.current_fen, src, tgt) ? promotion : '')
+      if (isPawnPromotion(match.current_fen, src, tgt)) {
+        requestPromotion(src, tgt, myColor[0] as 'w' | 'b')
+        clearSelection()
+        // Returning false snaps the piece back to source while the picker is up.
+        return false
+      }
+      const uci = src + tgt
       clearSelection()
       makeMove(uci)
       return true
@@ -172,8 +211,6 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
     if (canPremove && isOwnPieceAt(src)) {
       const promo = isPawnPromotion(match.current_fen, src, tgt) ? promotion : undefined
       queuePremove(src, tgt, promo)
-      // Returning true keeps the piece visually at the target until the next
-      // authoritative position update (opponent's move) re-renders the board.
       return true
     }
 
@@ -182,6 +219,13 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
 
   function handleSquareRightClick() {
     if (premove || premoveSource) clearPremove()
+  }
+
+  async function handlePromotionSelect(piece: 'q' | 'r' | 'b' | 'n') {
+    if (!pendingPromotion) return
+    const { from, to } = pendingPromotion
+    clearPromotion()
+    await makeMove(from + to + piece)
   }
 
   const topPlayer = orientation === 'white' ? match.black : match.white
@@ -224,6 +268,9 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
     setReviewIndex(null)
   }
 
+  const canOfferDraw =
+    isViewerPlaying && isHumanVsHuman && isOngoing && !pendingDraw && !pendingPromotion
+
   return (
     <div className="flex flex-col lg:flex-row gap-4 w-full max-w-6xl mx-auto px-4 py-4 lg:py-6">
       <div ref={gameAreaRef} className="flex flex-col gap-3 flex-1 min-w-0">
@@ -237,20 +284,32 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
           materialAdvantage={topAdvantage}
         />
 
-        <ChessBoard
-          fen={displayFen}
-          orientation={orientation}
-          legalMoves={isReviewing ? [] : legalMoves}
-          selectedSquare={isReviewing ? null : selectedSquare}
-          onSquareClick={handleSquareClick}
-          onPieceDrop={handlePieceDrop}
-          onSquareRightClick={handleSquareRightClick}
-          disabled={boardDisabled}
-          premoveFrom={isReviewing ? null : premove?.from ?? null}
-          premoveTo={isReviewing ? null : premove?.to ?? null}
-          premoveSource={isReviewing ? null : premoveSource}
-          canDragPiece={canDragPiece}
-        />
+        <div className="relative">
+          <ChessBoard
+            fen={displayFen}
+            orientation={orientation}
+            legalMoves={isReviewing ? [] : legalMoves}
+            selectedSquare={isReviewing ? null : selectedSquare}
+            onSquareClick={handleSquareClick}
+            onPieceDrop={handlePieceDrop}
+            onSquareRightClick={handleSquareRightClick}
+            disabled={boardDisabled || pendingPromotion !== null}
+            premoveFrom={isReviewing ? null : premove?.from ?? null}
+            premoveTo={isReviewing ? null : premove?.to ?? null}
+            premoveSource={isReviewing ? null : premoveSource}
+            canDragPiece={canDragPiece}
+          />
+
+          {pendingPromotion && (
+            <PromotionPicker
+              color={pendingPromotion.color}
+              targetSquare={pendingPromotion.to}
+              orientation={orientation}
+              onSelect={handlePromotionSelect}
+              onCancel={clearPromotion}
+            />
+          )}
+        </div>
 
         <PlayerCard
           player={bottomPlayer}
@@ -288,14 +347,54 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
             myColor={viewerUserId ? myColor : null}
           />
         ) : viewerUserId && (
-          <Button
-            variant="danger"
-            size="sm"
-            onClick={resign}
-            className="w-full"
-          >
-            Resign
-          </Button>
+          <div className="flex flex-col gap-2">
+            {pendingDraw?.from === 'opponent' && (
+              <div className="rounded-xl border border-accent/40 bg-bg-elevated p-3 flex flex-col gap-2">
+                <span className="text-sm text-text-primary">
+                  Your opponent offers a draw.
+                </span>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="primary" onClick={acceptDraw} className="flex-1">
+                    Accept
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={declineDraw} className="flex-1">
+                    Decline
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {pendingDraw?.from === 'me' && (
+              <div className="rounded-xl border border-border bg-bg-secondary p-3 flex items-center justify-between gap-2">
+                <span className="text-xs text-text-muted">Draw offered.</span>
+                <Button size="sm" variant="ghost" onClick={declineDraw}>
+                  Retract
+                </Button>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              {isHumanVsHuman && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={offerDraw}
+                  disabled={!canOfferDraw}
+                  className="flex-1"
+                >
+                  Offer draw
+                </Button>
+              )}
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={resign}
+                className="flex-1"
+              >
+                Resign
+              </Button>
+            </div>
+          </div>
         )}
 
         <div className="rounded-xl border border-border bg-bg-secondary overflow-hidden h-48 lg:h-auto lg:flex-1">
@@ -345,10 +444,5 @@ function pieceAt(fen: string, square: string): string | null {
       col++
     }
   }
-  return null
-}
-
-function inferPromotion(fen: string, src: string, tgt: string): string | null {
-  if (isPawnPromotion(fen, src, tgt)) return 'q'
   return null
 }
