@@ -16,10 +16,11 @@ function groupMoves(moves: string[]): Array<[string, string | null]> {
 }
 
 export function MoveList({ moves }: MoveListProps) {
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const el = scrollRef.current
+    if (el) el.scrollTop = el.scrollHeight
   }, [moves.length])
 
   const pairs = groupMoves(moves)
@@ -29,7 +30,7 @@ export function MoveList({ moves }: MoveListProps) {
       <div className="px-3 py-2 text-xs font-semibold text-text-muted uppercase tracking-wider border-b border-border">
         Moves
       </div>
-      <div className="flex-1 overflow-y-auto px-2 py-1 scrollbar-thin">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-2 py-1 scrollbar-thin">
         {pairs.length === 0 ? (
           <p className="text-xs text-text-muted text-center py-6">Game start</p>
         ) : (
@@ -54,7 +55,6 @@ export function MoveList({ moves }: MoveListProps) {
             </tbody>
           </table>
         )}
-        <div ref={bottomRef} />
       </div>
     </div>
   )

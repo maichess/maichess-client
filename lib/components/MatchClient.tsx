@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type { Match } from '@/lib/models/match'
 import { isUserPlayer } from '@/lib/models/match'
 import { getActiveColor } from '@/lib/utils/fen'
@@ -21,6 +21,17 @@ interface MatchClientProps {
 export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
   const { match, displayFen, makeMove, resign, applyMoveEvent, applyMatchEnded, submitting } =
     useMatch(initialMatch)
+
+  const boardRef = useRef<HTMLDivElement>(null)
+  const prevMovesCountRef = useRef(initialMatch.moves.length)
+  useEffect(() => {
+    const prev = prevMovesCountRef.current
+    prevMovesCountRef.current = match.moves.length
+    if (match.moves.length <= prev) return
+    if (window.innerWidth < 1024) {
+      boardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [match.moves.length])
 
   const { legalMoves, selectedSquare, fetchLegalMoves, clearSelection } =
     useLegalMoves(match.id)
@@ -81,9 +92,9 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
   const bottomSide: 'white' | 'black' = orientation
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 w-full max-w-6xl mx-auto px-4 py-6">
+    <div className="flex flex-col lg:flex-row gap-4 w-full max-w-6xl mx-auto px-4 py-4 lg:py-6">
       {/* Board column */}
-      <div className="flex flex-col gap-3 flex-1 min-w-0">
+      <div ref={boardRef} className="flex flex-col gap-3 flex-1 min-w-0">
         <PlayerCard
           player={topPlayer}
           timeMs={topTimeMs}
@@ -129,7 +140,7 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
           </Button>
         )}
 
-        <div className="flex-1 rounded-xl border border-border bg-bg-secondary overflow-hidden min-h-48">
+        <div className="rounded-xl border border-border bg-bg-secondary overflow-hidden h-48 lg:h-auto lg:flex-1">
           <MoveList moves={match.moves} />
         </div>
       </div>
