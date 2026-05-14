@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Player } from '@/lib/models/match'
 import { playerDisplayName, isUserPlayer } from '@/lib/models/match'
 import { msToClockString, isCriticalTime } from '@/lib/utils/time'
+import { pieceGlyph } from '@/lib/utils/captured'
 
 interface PlayerCardProps {
   player: Player
@@ -12,18 +13,28 @@ interface PlayerCardProps {
   isActive: boolean
   side: 'white' | 'black'
   elo?: number
+  /** Pieces this player has captured from the opponent. */
+  captured?: string[]
+  /** Material advantage; positive means this player is ahead. Hidden when not positive. */
+  materialAdvantage?: number
 }
 
-export function PlayerCard({ player, timeMs, lastMoveAtMs, isActive, side, elo }: PlayerCardProps) {
+export function PlayerCard({
+  player,
+  timeMs,
+  lastMoveAtMs,
+  isActive,
+  side,
+  elo,
+  captured,
+  materialAdvantage,
+}: PlayerCardProps) {
   const [displayTime, setDisplayTime] = useState(timeMs)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const lastTickRef = useRef<number>(0)
   const isActiveRef = useRef(isActive)
   isActiveRef.current = isActive
 
-  // Sync displayTime only when the server sends an authoritative time update.
-  // isActive is read via ref so a turn change alone (while the server response is
-  // in flight) does not snap the display back to the stale server value.
   useEffect(() => {
     const alreadyElapsed = isActiveRef.current ? Math.max(0, Date.now() - lastMoveAtMs) : 0
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -31,7 +42,6 @@ export function PlayerCard({ player, timeMs, lastMoveAtMs, isActive, side, elo }
     lastTickRef.current = Date.now()
   }, [timeMs, lastMoveAtMs])
 
-  // Start or stop the countdown interval when the active player changes.
   useEffect(() => {
     if (!isActive) {
       if (intervalRef.current) clearInterval(intervalRef.current)
@@ -52,6 +62,8 @@ export function PlayerCard({ player, timeMs, lastMoveAtMs, isActive, side, elo }
   const isBot = !isUserPlayer(player)
   const displayName = playerDisplayName(player)
   const critical = isCriticalTime(displayTime)
+  const hasCaptured = captured && captured.length > 0
+  const advantage = materialAdvantage ?? 0
 
   return (
     <div
@@ -62,8 +74,7 @@ export function PlayerCard({ player, timeMs, lastMoveAtMs, isActive, side, elo }
           : 'bg-bg-secondary border border-border',
       ].join(' ')}
     >
-      <div className="flex items-center gap-3">
-        {/* Avatar */}
+      <div className="flex min-w-0 items-center gap-3">
         <div
           className={[
             'size-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0',
@@ -75,9 +86,9 @@ export function PlayerCard({ player, timeMs, lastMoveAtMs, isActive, side, elo }
           {isBot ? '🤖' : displayName[0].toUpperCase()}
         </div>
 
-        <div>
+        <div className="min-w-0">
           <div className="flex items-center gap-1.5">
-            <span className="text-sm font-medium text-text-primary leading-none">
+            <span className="text-sm font-medium text-text-primary leading-none truncate">
               {displayName}
             </span>
             {isBot && (
@@ -89,10 +100,19 @@ export function PlayerCard({ player, timeMs, lastMoveAtMs, isActive, side, elo }
           {elo !== undefined && (
             <span className="text-xs text-text-muted">{elo} ELO</span>
           )}
+          {hasCaptured && (
+            <div className="mt-1 flex items-center gap-1 text-base leading-none text-text-muted">
+              <span aria-label="captured pieces" className="tracking-tight">
+                {captured!.map((p) => pieceGlyph(p)).join('')}
+              </span>
+              {advantage > 0 && (
+                <span className="text-[10px] font-semibold text-accent">+{advantage}</span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Clock */}
       <div
         className={[
           'font-mono text-xl font-semibold tabular-nums transition-colors duration-300',

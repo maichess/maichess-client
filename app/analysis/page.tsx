@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { ROUTES } from '@/lib/constants/routes'
-import { GameLibrary } from '@/lib/components/analysis/GameLibrary'
+import { AnalysisTabs } from '@/lib/components/analysis/AnalysisTabs'
 import type { AnalysisGame } from '@/lib/models/analysis'
 
 const PAGE_SIZE = 20
@@ -37,7 +37,7 @@ export default async function AnalysisPage() {
   const result = await getGames(token)
 
   return (
-    <GameLibrary
+    <AnalysisTabs
       initialGames={result?.games ?? []}
       initialTotal={result?.total ?? 0}
       pageSize={PAGE_SIZE}

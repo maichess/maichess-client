@@ -20,12 +20,22 @@ export function useMatchEvents(
       onEnd(event)
     }
 
+    const subscribe = () => socket.emit('subscribe_match', { match_id: matchId })
+
+    if (socket.connected) {
+      subscribe()
+    } else {
+      socket.once('connect', subscribe)
+    }
+
     socket.on('move_made', handleMove)
     socket.on('match_ended', handleEnd)
 
     return () => {
       socket.off('move_made', handleMove)
       socket.off('match_ended', handleEnd)
+      socket.off('connect', subscribe)
+      socket.emit('unsubscribe_match', { match_id: matchId })
     }
   }, [matchId, onMove, onEnd])
 }

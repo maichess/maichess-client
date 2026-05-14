@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import type { AnalysisGame } from '@/lib/models/analysis'
 import { playerInfoName } from '@/lib/models/analysis'
@@ -14,10 +14,32 @@ interface GameLibraryProps {
   initialGames: AnalysisGame[]
   initialTotal: number
   pageSize: number
+  /** When embedded the parent renders the page header & import button. */
+  embedded?: boolean
+  /** Controlled import modal flag (used when embedded). */
+  showImport?: boolean
+  /** Called when the embedded modal closes. */
+  onImportClose?: () => void
 }
 
-export function GameLibrary({ initialGames, initialTotal, pageSize }: GameLibraryProps) {
-  const [showImport, setShowImport] = useState(false)
+export function GameLibrary({
+  initialGames,
+  initialTotal,
+  pageSize,
+  embedded = false,
+  showImport: showImportProp,
+  onImportClose,
+}: GameLibraryProps) {
+  const [internalShowImport, setInternalShowImport] = useState(false)
+  const showImport = embedded ? !!showImportProp : internalShowImport
+  const setShowImport = (v: boolean) => {
+    if (embedded) {
+      if (!v) onImportClose?.()
+    } else {
+      setInternalShowImport(v)
+    }
+  }
+
   const { data, loading, error, nextPage, prevPage, totalPages, refresh } = useGameLibrary({
     games: initialGames,
     total: initialTotal,
@@ -25,78 +47,92 @@ export function GameLibrary({ initialGames, initialTotal, pageSize }: GameLibrar
     page_size: pageSize,
   })
 
+  useEffect(() => {
+    if (embedded && !showImport) {
+      refresh()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showImport, embedded])
+
   function handleImportClose() {
     setShowImport(false)
-    refresh()
+    if (!embedded) refresh()
   }
 
-  return (
+  const body = (
     <>
-      <div className="mx-auto max-w-4xl px-4 py-10">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-text-primary">Analysis</h1>
-            <p className="mt-0.5 text-sm text-text-muted">Import and analyse chess games</p>
-          </div>
-          <Button onClick={() => setShowImport(true)}>
-            Import game
-          </Button>
+      {error && (
+        <div className="mb-4 rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
+          {error}
         </div>
+      )}
 
-        {error && (
-          <div className="mb-4 rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
-            {error}
-          </div>
-        )}
-
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <Spinner size="lg" />
-          </div>
-        ) : data.games.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-bg-secondary p-12 text-center">
-            <p className="text-text-muted">No games yet. Import a game to start analysing.</p>
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <Spinner size="lg" />
+        </div>
+      ) : data.games.length === 0 ? (
+        <div className="rounded-2xl border border-border bg-bg-secondary p-12 text-center">
+          <p className="text-text-muted">No games yet. Import a game to start analysing.</p>
+          {!embedded && (
             <Button className="mt-4" onClick={() => setShowImport(true)}>
               Import game
             </Button>
+          )}
+        </div>
+      ) : (
+        <>
+          <div className="space-y-2">
+            {data.games.map((game) => (
+              <GameRow key={game.id} game={game} />
+            ))}
           </div>
-        ) : (
-          <>
-            <div className="space-y-2">
-              {data.games.map((game) => (
-                <GameRow key={game.id} game={game} />
-              ))}
-            </div>
 
-            {totalPages > 1 && (
-              <div className="mt-6 flex items-center justify-center gap-3">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={prevPage}
-                  disabled={data.page <= 1}
-                >
-                  ← Prev
-                </Button>
-                <span className="text-sm text-text-muted">
-                  {data.page} / {totalPages}
-                </span>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={nextPage}
-                  disabled={data.page >= totalPages}
-                >
-                  Next →
-                </Button>
-              </div>
-            )}
-          </>
-        )}
-      </div>
+          {totalPages > 1 && (
+            <div className="mt-6 flex items-center justify-center gap-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={prevPage}
+                disabled={data.page <= 1}
+              >
+                ← Prev
+              </Button>
+              <span className="text-sm text-text-muted">
+                {data.page} / {totalPages}
+              </span>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={nextPage}
+                disabled={data.page >= totalPages}
+              >
+                Next →
+              </Button>
+            </div>
+          )}
+        </>
+      )}
 
       {showImport && <ImportModal onClose={handleImportClose} />}
     </>
+  )
+
+  if (embedded) return body
+
+  return (
+    <div className="mx-auto max-w-4xl px-4 py-10">
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-text-primary">Analysis</h1>
+          <p className="mt-0.5 text-sm text-text-muted">Import and analyse chess games</p>
+        </div>
+        <Button onClick={() => setShowImport(true)}>
+          Import game
+        </Button>
+      </div>
+      {body}
+    </div>
   )
 }
 

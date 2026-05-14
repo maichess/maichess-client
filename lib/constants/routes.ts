@@ -5,6 +5,8 @@ export const ROUTES = {
   dashboard: '/dashboard',
   play: '/play',
   match: (id: string) => `/match/${id}`,
+  watch: '/watch',
+  watchMatch: (id: string) => `/watch/${id}`,
   profile: '/profile',
   analysis: '/analysis',
   analysisGame: (id: string) => `/analysis/${id}`,

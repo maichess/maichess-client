@@ -65,6 +65,12 @@ export default async function DashboardPage() {
             icon="🤖"
           />
           <PlayOption
+            href={ROUTES.watch}
+            title="Watch"
+            description="Watch live matches as they happen"
+            icon="📺"
+          />
+          <PlayOption
             href={ROUTES.analysis}
             title="Analyse"
             description="Import and analyse games with engine assistance"

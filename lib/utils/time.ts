@@ -1,3 +1,5 @@
+import type { TimeFormat } from '@/lib/models/match'
+
 /**
  * Converts milliseconds to a clock string: "5:32" or "0:04"
  */
@@ -13,4 +15,25 @@ export function msToClockString(ms: number): string {
  */
 export function isCriticalTime(ms: number): boolean {
   return ms < 10_000
+}
+
+/**
+ * Renders the chess-standard `base+increment` label, e.g. "5+0", "3+2".
+ * Falls back to the format id when increment data is missing.
+ */
+export function formatTimeFormatLabel(tf: TimeFormat): string {
+  if (tf.id && tf.id.includes('+')) return tf.id
+  const baseMin = Math.floor(tf.base_ms / 60_000)
+  const incSec = Math.floor(tf.increment_ms / 1_000)
+  return `${baseMin}+${incSec}`
+}
+
+/**
+ * Renders the duration in human-readable form: "5 min + 0s" or "1 min + 1s".
+ */
+export function formatTimeFormatDuration(tf: TimeFormat): string {
+  const baseMin = Math.round(tf.base_ms / 60_000)
+  const incSec = Math.round(tf.increment_ms / 1_000)
+  const baseLabel = baseMin === 1 ? '1 min' : `${baseMin} min`
+  return `${baseLabel} + ${incSec}s`
 }

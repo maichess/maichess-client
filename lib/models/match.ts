@@ -3,8 +3,15 @@ export type BotPlayer = { bot_id: string; name: string }
 export type Player = UserPlayer | BotPlayer
 
 export type MatchStatus = 'ongoing' | 'white_won' | 'black_won' | 'draw'
-export type TimeControl = 'bullet' | 'blitz' | 'rapid' | 'classical'
+export type TimeFormatCategory = 'bullet' | 'blitz' | 'rapid' | 'classical'
 export type EndReason = 'checkmate' | 'resignation' | 'stalemate' | 'timeout' | 'draw_agreement'
+
+export interface TimeFormat {
+  id: string
+  base_ms: number
+  increment_ms: number
+  category: TimeFormatCategory
+}
 
 export interface Match {
   id: string
@@ -13,11 +20,30 @@ export interface Match {
   current_fen: string
   status: MatchStatus
   moves: string[]
-  time_control: TimeControl
+  time_format: TimeFormat
   white_time_ms: number
   black_time_ms: number
   last_move_at_ms: number
   analyzable?: boolean
+}
+
+export interface MatchSummary {
+  id: string
+  white: Player
+  black: Player
+  status: MatchStatus
+  time_format: TimeFormat
+  white_time_ms: number
+  black_time_ms: number
+  last_move_at_ms: number
+  move_count: number
+}
+
+export interface MatchListResponse {
+  matches: MatchSummary[]
+  total: number
+  page: number
+  page_size: number
 }
 
 export interface MoveEvent {

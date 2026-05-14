@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { cookies } from 'next/headers'
 import type { Theme } from '@/lib/constants/themes'
 import { DEFAULT_THEME, THEMES } from '@/lib/constants/themes'
+import { TokenRefresher } from '@/lib/components/TokenRefresher'
 import './globals.css'
 
 const geistSans = Geist({
@@ -31,6 +32,7 @@ export default async function RootLayout({
     rawTheme && (THEMES as readonly string[]).includes(rawTheme)
       ? (rawTheme as Theme)
       : DEFAULT_THEME
+  const isLoggedIn = cookieStore.has('access_token')
 
   return (
     <html
@@ -38,7 +40,10 @@ export default async function RootLayout({
       data-theme={theme}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {isLoggedIn && <TokenRefresher />}
+        {children}
+      </body>
     </html>
   )
 }
