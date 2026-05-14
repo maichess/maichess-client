@@ -21,6 +21,7 @@
   --sq-dark: #b58863;
   --sq-highlight: rgba(246, 246, 105, 0.5);
   --sq-legal: rgba(0, 0, 0, 0.14);
+  --sq-premove: rgba(220, 80, 50, 0.55);
 }
 
 [data-theme="dark"] {
@@ -41,6 +42,7 @@
   --sq-dark: #739552;
   --sq-highlight: rgba(246, 246, 105, 0.5);
   --sq-legal: rgba(255, 255, 255, 0.16);
+  --sq-premove: rgba(230, 95, 60, 0.6);
 }
 
 [data-theme="forest"] {
@@ -61,6 +63,7 @@
   --sq-dark: #6aaa44;
   --sq-highlight: rgba(255, 229, 102, 0.55);
   --sq-legal: rgba(0, 0, 0, 0.18);
+  --sq-premove: rgba(217, 96, 64, 0.6);
 }
 
 [data-theme="ocean"] {
@@ -81,6 +84,7 @@
   --sq-dark: #3a80b8;
   --sq-highlight: rgba(56, 216, 248, 0.45);
   --sq-legal: rgba(255, 255, 255, 0.18);
+  --sq-premove: rgba(240, 85, 117, 0.6);
 }
 
 [data-theme="midnight"] {
@@ -101,6 +105,7 @@
   --sq-dark: #6850b8;
   --sq-highlight: rgba(200, 160, 255, 0.5);
   --sq-legal: rgba(255, 255, 255, 0.18);
+  --sq-premove: rgba(240, 112, 112, 0.6);
 }
 
 /* ─── Tailwind token bridge ─────────────────────────────────────────── */

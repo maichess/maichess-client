@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Match } from '@/lib/models/match'
 import { isUserPlayer } from '@/lib/models/match'
-import { getActiveColor } from '@/lib/utils/fen'
+import { applyMove, getActiveColor, getPieceAt } from '@/lib/utils/fen'
 import { useMatch } from '@/lib/hooks/useMatch'
 import { useMatchEvents } from '@/lib/hooks/useMatchEvents'
 import { useLegalMoves } from '@/lib/hooks/useLegalMoves'
+import { usePremove } from '@/lib/hooks/usePremove'
 import { computeCaptured } from '@/lib/utils/captured'
 import { Chess } from 'chess.js'
 import { ChessBoard } from './ChessBoard'
@@ -36,9 +37,6 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
     const prev = prevMovesCountRef.current
     prevMovesCountRef.current = match.moves.length
     if (match.moves.length <= prev) return
-    // Keep both player labels and the whole board in view on mobile.
-    // `block: 'nearest'` only scrolls when the container is out of view and
-    // stops once it's fully visible — so the bottom player card remains visible.
     if (window.innerWidth < 1024) {
       gameAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
     }
@@ -46,6 +44,8 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
 
   const { legalMoves, selectedSquare, fetchLegalMoves, clearSelection } =
     useLegalMoves(match.id)
+  const { premove, premoveSource, queuePremove, selectPremoveSource, clearPremove } =
+    usePremove()
 
   const orientation: 'white' | 'black' = useMemo(() => {
     if (!viewerUserId) return 'white'
@@ -54,7 +54,13 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
     return 'white'
   }, [viewerUserId, match.white, match.black])
 
-  // Compute the historical FEN locally when reviewing past positions.
+  const isViewerPlaying = useMemo(() => {
+    if (!viewerUserId) return false
+    const w = isUserPlayer(match.white) && match.white.user_id === viewerUserId
+    const b = isUserPlayer(match.black) && match.black.user_id === viewerUserId
+    return w || b
+  }, [viewerUserId, match.white, match.black])
+
   const reviewFen = useMemo(() => {
     if (reviewIndex === null) return null
     return computeFenAtIndex(match.moves, reviewIndex)
@@ -65,43 +71,118 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
 
   const activeColor = getActiveColor(displayFen)
   const myColor = orientation
-  const isMyTurn = match.status === 'ongoing' && activeColor === myColor[0] && !isReviewing
-  const boardDisabled = !isMyTurn || submitting
+  const isOngoing = match.status === 'ongoing'
+  const isGameOver = !isOngoing
+  const isMyTurn = isOngoing && activeColor === myColor[0] && !isReviewing
+  // Board is fully non-interactive only when reviewing or the game ended.
+  // During the opponent's turn we still accept input — to queue a premove.
+  const boardDisabled = isReviewing || isGameOver
+  const canPremove = isViewerPlaying && !isMyTurn && !isReviewing && isOngoing
 
   const onMove = useCallback(applyMoveEvent, [applyMoveEvent])
   const onEnd = useCallback(applyMatchEnded, [applyMatchEnded])
   useMatchEvents(match.id, onMove, onEnd)
 
-  // Captured material for both sides (recomputed when the move list changes
-  // or the review index changes so the badge tracks the currently shown board).
+  // When the opponent's move arrives and it becomes our turn, try to play the
+  // queued premove. If chess.js accepts it, fire makeMove; otherwise discard.
+  useEffect(() => {
+    if (!premove || !isMyTurn || submitting) return
+    const uci = premove.from + premove.to + (premove.promotion ?? '')
+    const next = applyMove(match.current_fen, uci)
+    clearPremove()
+    if (next) {
+      void makeMove(uci)
+    }
+  }, [isMyTurn, premove, submitting, match.current_fen, makeMove, clearPremove])
+
+  // Clear any pending premove if the game ends.
+  useEffect(() => {
+    if (isGameOver) clearPremove()
+  }, [isGameOver, clearPremove])
+
   const captured = useMemo(() => {
     const visibleMoves = reviewIndex === null ? match.moves : match.moves.slice(0, reviewIndex)
     return computeCaptured(INITIAL_FEN, visibleMoves)
   }, [match.moves, reviewIndex])
 
-  async function handleSquareClick(square: string) {
-    if (!isMyTurn) return
+  const isOwnPieceAt = useCallback(
+    (square: string) => {
+      const piece = getPieceAt(match.current_fen, square)
+      return piece?.color === myColor[0]
+    },
+    [match.current_fen, myColor]
+  )
 
-    if (selectedSquare && legalMoves.some((m) => m.startsWith(selectedSquare) && m.slice(2, 4) === square)) {
-      const uci = selectedSquare + square
-      const promotion = inferPromotion(match.current_fen, selectedSquare, square)
-      clearSelection()
-      await makeMove(uci + (promotion ? promotion : ''))
+  const canDragPiece = useCallback(
+    (square: string) => {
+      if (isMyTurn) return isOwnPieceAt(square)
+      if (canPremove) return isOwnPieceAt(square)
+      return false
+    },
+    [isMyTurn, canPremove, isOwnPieceAt]
+  )
+
+  async function handleSquareClick(square: string) {
+    if (isMyTurn) {
+      if (
+        selectedSquare &&
+        legalMoves.some((m) => m.startsWith(selectedSquare) && m.slice(2, 4) === square)
+      ) {
+        const uci = selectedSquare + square
+        const promotion = inferPromotion(match.current_fen, selectedSquare, square)
+        clearSelection()
+        await makeMove(uci + (promotion ? promotion : ''))
+        return
+      }
+      fetchLegalMoves(square)
       return
     }
 
-    fetchLegalMoves(square)
+    if (!canPremove) return
+
+    // Premove input: pick a source piece, then a target square.
+    if (premoveSource) {
+      if (square === premoveSource) {
+        clearPremove()
+        return
+      }
+      const promotion = isPawnPromotion(match.current_fen, premoveSource, square) ? 'q' : undefined
+      queuePremove(premoveSource, square, promotion)
+      return
+    }
+
+    if (isOwnPieceAt(square)) {
+      selectPremoveSource(square)
+      return
+    }
+
+    clearPremove()
   }
 
   function handlePieceDrop(src: string, tgt: string, promotion = 'q'): boolean {
     if (boardDisabled) return false
-    const uci = src + tgt + (isPawnPromotion(match.current_fen, src, tgt) ? promotion : '')
-    clearSelection()
-    makeMove(uci)
-    return true
+
+    if (isMyTurn) {
+      const uci = src + tgt + (isPawnPromotion(match.current_fen, src, tgt) ? promotion : '')
+      clearSelection()
+      makeMove(uci)
+      return true
+    }
+
+    if (canPremove && isOwnPieceAt(src)) {
+      const promo = isPawnPromotion(match.current_fen, src, tgt) ? promotion : undefined
+      queuePremove(src, tgt, promo)
+      // Returning true keeps the piece visually at the target until the next
+      // authoritative position update (opponent's move) re-renders the board.
+      return true
+    }
+
+    return false
   }
 
-  const isGameOver = match.status !== 'ongoing'
+  function handleSquareRightClick() {
+    if (premove || premoveSource) clearPremove()
+  }
 
   const topPlayer = orientation === 'white' ? match.black : match.white
   const bottomPlayer = orientation === 'white' ? match.white : match.black
@@ -112,7 +193,6 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
   const topSide: 'white' | 'black' = orientation === 'white' ? 'black' : 'white'
   const bottomSide: 'white' | 'black' = orientation
 
-  // Captured pieces a player has *taken* equals captured-by-their-color.
   const whiteCaptured = captured.byWhite
   const blackCaptured = captured.byBlack
   const whiteAdvantage = Math.max(0, captured.diff)
@@ -164,7 +244,12 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
           selectedSquare={isReviewing ? null : selectedSquare}
           onSquareClick={handleSquareClick}
           onPieceDrop={handlePieceDrop}
+          onSquareRightClick={handleSquareRightClick}
           disabled={boardDisabled}
+          premoveFrom={isReviewing ? null : premove?.from ?? null}
+          premoveTo={isReviewing ? null : premove?.to ?? null}
+          premoveSource={isReviewing ? null : premoveSource}
+          canDragPiece={canDragPiece}
         />
 
         <PlayerCard
@@ -177,7 +262,6 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
           materialAdvantage={bottomAdvantage}
         />
 
-        {/* Review controls — visible whenever there's a move history */}
         {match.moves.length > 0 && (
           <div className="flex items-center justify-between rounded-xl border border-border bg-bg-secondary px-3 py-2">
             <div className="flex gap-1">
