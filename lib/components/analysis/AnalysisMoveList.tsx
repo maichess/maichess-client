@@ -1,21 +1,25 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
+import { uciListToSan } from '@/lib/utils/san'
 
 interface AnalysisMoveListProps {
   moves: string[]
+  startingFen?: string
   currentIndex: number
   onNavigate: (index: number) => void
 }
 
-export function AnalysisMoveList({ moves, currentIndex, onNavigate }: AnalysisMoveListProps) {
+export function AnalysisMoveList({ moves, startingFen, currentIndex, onNavigate }: AnalysisMoveListProps) {
   const activeRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     activeRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   }, [currentIndex])
 
-  if (moves.length === 0) {
+  const sanMoves = useMemo(() => uciListToSan(moves, startingFen), [moves, startingFen])
+
+  if (sanMoves.length === 0) {
     return (
       <div className="flex flex-col h-full min-h-0">
         <div className="px-3 py-2 text-xs font-semibold text-text-muted uppercase tracking-wider border-b border-border">
@@ -27,8 +31,8 @@ export function AnalysisMoveList({ moves, currentIndex, onNavigate }: AnalysisMo
   }
 
   const pairs: Array<[number, string, string | null]> = []
-  for (let i = 0; i < moves.length; i += 2) {
-    pairs.push([i, moves[i], moves[i + 1] ?? null])
+  for (let i = 0; i < sanMoves.length; i += 2) {
+    pairs.push([i, sanMoves[i], sanMoves[i + 1] ?? null])
   }
 
   return (

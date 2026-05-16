@@ -1,7 +1,9 @@
 'use client'
 
+import { useMemo } from 'react'
 import type { AnalysisLine } from '@/lib/models/analysis'
 import { formatEval } from '@/lib/utils/fen'
+import { uciListToSan } from '@/lib/utils/san'
 import { Spinner } from '@/lib/components/ui/Spinner'
 
 interface AnalysisPanelProps {
@@ -14,6 +16,11 @@ interface AnalysisPanelProps {
 }
 
 export function AnalysisPanel({ lines, depth, running, complete, error, currentFen }: AnalysisPanelProps) {
+  const sanLines = useMemo(
+    () => lines.map((line) => uciListToSan(line.moves, currentFen)),
+    [lines, currentFen]
+  )
+
   return (
     <div className="rounded-xl border border-border bg-bg-secondary overflow-hidden">
       <div className="flex items-center justify-between px-3 py-2 border-b border-border">
@@ -38,17 +45,19 @@ export function AnalysisPanel({ lines, depth, running, complete, error, currentF
           </p>
         )}
 
-        {lines.map((line) => (
-          <div key={line.rank} className="flex items-baseline gap-2 py-1 text-xs">
-            <span className="w-4 text-text-muted shrink-0">{line.rank}.</span>
-            <span className="w-12 font-mono font-semibold shrink-0 text-text-primary">
-              {formatEval(line.evaluation_cp, currentFen)}
-            </span>
-            <span className="font-mono text-text-secondary truncate">
-              {line.moves.join(' ')}
-            </span>
-          </div>
-        ))}
+        {lines.map((line, idx) => {
+          const san = sanLines[idx]
+          const pv = san.length > 0 ? san.join(' ') : line.moves.join(' ')
+          return (
+            <div key={line.rank} className="flex items-baseline gap-2 py-1 text-xs">
+              <span className="w-4 text-text-muted shrink-0">{line.rank}.</span>
+              <span className="w-12 font-mono font-semibold shrink-0 text-text-primary">
+                {formatEval(line.evaluation_cp, currentFen)}
+              </span>
+              <span className="font-mono text-text-secondary truncate">{pv}</span>
+            </div>
+          )
+        })}
       </div>
     </div>
   )

@@ -1,9 +1,10 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import type { AnalysisConfig, AnalysisGameDetail } from '@/lib/models/analysis'
 import { useAnalysisSession } from '@/lib/hooks/useAnalysisSession'
 import { useAnalysisBoardInput } from '@/lib/hooks/useAnalysisBoardInput'
+import { buildAnalysisArrows } from '@/lib/utils/analysisArrows'
 import { ChessBoard } from './ChessBoard'
 import { AnalysisPanel } from './analysis/AnalysisPanel'
 import { AnalysisMoveList } from './analysis/AnalysisMoveList'
@@ -31,6 +32,21 @@ export function AnalysisClient({ game, config }: AnalysisClientProps) {
 
   const inWhatif = state.whatifMoves.length > 0
   const hasSession = state.activeSessionId !== null
+
+  // When viewing the actual game (not in whatif mode), the move played from
+  // this position is the one at game.moves[currentIndex]. Outside that range
+  // (start, end, or whatif) there is no "actual" move to show.
+  const actualMoveUci = useMemo(() => {
+    if (inWhatif) return null
+    const idx = state.currentIndex
+    if (idx < 0 || idx >= game.moves.length) return null
+    return game.moves[idx]
+  }, [inWhatif, state.currentIndex, game.moves])
+
+  const boardArrows = useMemo(
+    () => buildAnalysisArrows(state.currentLines, actualMoveUci),
+    [state.currentLines, actualMoveUci]
+  )
 
   async function handleExportPgn() {
     const pgn = await exportWhatifPgn()
@@ -60,6 +76,7 @@ export function AnalysisClient({ game, config }: AnalysisClientProps) {
             onSquareClick={handleSquareClick}
             onPieceDrop={handlePieceDrop}
             disabled={!hasSession}
+            arrows={boardArrows}
           />
         </div>
 
@@ -116,6 +133,7 @@ export function AnalysisClient({ game, config }: AnalysisClientProps) {
         <div className="rounded-xl border border-border bg-bg-secondary overflow-hidden min-h-40 max-h-60">
           <AnalysisMoveList
             moves={game.moves}
+            startingFen={game.starting_fen}
             currentIndex={state.currentIndex}
             onNavigate={navigate}
           />

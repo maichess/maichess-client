@@ -8,6 +8,12 @@ type SquareHandlerArgs = { piece: unknown; square: string }
 type PieceDropHandlerArgs = { piece: unknown; sourceSquare: string; targetSquare: string | null }
 type PieceHandlerArgs = { isSparePiece: boolean; piece: unknown; square: string | null }
 
+export type BoardArrow = {
+  startSquare: string
+  endSquare: string
+  color: string
+}
+
 interface ChessBoardProps {
   fen: string
   orientation: 'white' | 'black'
@@ -21,6 +27,7 @@ interface ChessBoardProps {
   premoveSource?: string | null
   canDragPiece?: (square: string) => boolean
   onSquareRightClick?: (square: string) => void
+  arrows?: BoardArrow[]
 }
 
 function getCssVar(name: string): string {
@@ -41,6 +48,7 @@ export function ChessBoard({
   premoveSource = null,
   canDragPiece,
   onSquareRightClick,
+  arrows,
 }: ChessBoardProps) {
   const { theme } = useTheme()
 
@@ -127,6 +135,7 @@ export function ChessBoard({
           onSquareRightClick: handleSquareRightClick,
           canDragPiece: handleCanDragPiece,
           squareStyles,
+          arrows: arrows ?? [],
           allowDragging: !disabled,
           boardStyle: {
             borderRadius: '8px',

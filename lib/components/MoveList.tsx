@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
+import { uciListToSan } from '@/lib/utils/san'
 
 interface MoveListProps {
   moves: string[]
 }
 
-// Convert UCI move pairs into display rows: [["e2e4", "e7e5"], ["g1f3", ...], ...]
 function groupMoves(moves: string[]): Array<[string, string | null]> {
   const pairs: Array<[string, string | null]> = []
   for (let i = 0; i < moves.length; i += 2) {
@@ -23,7 +23,8 @@ export function MoveList({ moves }: MoveListProps) {
     if (el) el.scrollTop = el.scrollHeight
   }, [moves.length])
 
-  const pairs = groupMoves(moves)
+  const sanMoves = useMemo(() => uciListToSan(moves), [moves])
+  const pairs = groupMoves(sanMoves)
 
   return (
     <div className="flex flex-col h-full min-h-0">
