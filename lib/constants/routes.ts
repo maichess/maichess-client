@@ -10,4 +10,5 @@ export const ROUTES = {
   profile: '/profile',
   analysis: '/analysis',
   analysisGame: (id: string) => `/analysis/${id}`,
+  dev: '/dev',
 } as const

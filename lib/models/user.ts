@@ -5,4 +5,5 @@ export interface User {
   wins: number
   losses: number
   draws: number
+  dev_mode: boolean
 }

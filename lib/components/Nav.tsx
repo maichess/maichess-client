@@ -1,25 +1,10 @@
-import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { ThemeSelector } from './ThemeSelector'
 import { ROUTES } from '@/lib/constants/routes'
-import type { User } from '@/lib/models/user'
-
-async function getUser(): Promise<User | null> {
-  const cookieStore = await cookies()
-  try {
-    const res = await fetch(`${process.env.USER_SERVICE_URL}/users/me`, {
-      headers: { Cookie: cookieStore.toString() },
-      cache: 'no-store',
-    })
-    if (!res.ok) return null
-    return res.json()
-  } catch {
-    return null
-  }
-}
+import { getServerUser } from '@/lib/utils/serverUser'
 
 export async function Nav() {
-  const user = await getUser()
+  const user = await getServerUser()
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-bg-secondary/80 backdrop-blur-sm">
@@ -57,6 +42,14 @@ export async function Nav() {
               className="rounded-lg px-3 py-1.5 text-sm text-text-secondary hover:bg-bg-elevated hover:text-text-primary transition-colors"
             >
               Profile
+            </Link>
+          )}
+          {user?.dev_mode && (
+            <Link
+              href={ROUTES.dev}
+              className="rounded-lg px-3 py-1.5 text-sm text-text-secondary hover:bg-bg-elevated hover:text-text-primary transition-colors"
+            >
+              Dev
             </Link>
           )}
         </nav>

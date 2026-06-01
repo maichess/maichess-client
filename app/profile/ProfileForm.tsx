@@ -12,7 +12,7 @@ interface ProfileFormProps {
 }
 
 export function ProfileForm({ initialUser }: ProfileFormProps) {
-  const { user, updateUsername, loading, error, success } = useProfile(initialUser)
+  const { user, updateUsername, setDevMode, loading, error, success } = useProfile(initialUser)
   const { logout } = useAuth()
   const [newUsername, setNewUsername] = useState(user.username)
 
@@ -23,6 +23,7 @@ export function ProfileForm({ initialUser }: ProfileFormProps) {
   }
 
   return (
+    <div className="flex flex-col gap-6">
     <div className="rounded-2xl border border-border bg-bg-secondary p-6">
       <h2 className="mb-4 text-sm font-semibold text-text-muted uppercase tracking-wider">
         Account
@@ -58,6 +59,40 @@ export function ProfileForm({ initialUser }: ProfileFormProps) {
           </Button>
         </div>
       </form>
+    </div>
+
+    <div className="rounded-2xl border border-border bg-bg-secondary p-6">
+      <h2 className="mb-4 text-sm font-semibold text-text-muted uppercase tracking-wider">
+        Developer
+      </h2>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-medium text-text-primary">Developer mode</p>
+          <p className="text-xs text-text-muted mt-0.5">
+            Show the Dev area with bot arena and game tools.
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={user.dev_mode}
+          aria-label="Developer mode"
+          onClick={() => setDevMode(!user.dev_mode)}
+          className={[
+            'relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+            user.dev_mode ? 'bg-accent' : 'bg-bg-elevated',
+          ].join(' ')}
+        >
+          <span
+            className={[
+              'inline-block size-5 transform rounded-full bg-white shadow transition-transform',
+              user.dev_mode ? 'translate-x-5' : 'translate-x-0.5',
+            ].join(' ')}
+          />
+        </button>
+      </div>
+    </div>
     </div>
   )
 }
