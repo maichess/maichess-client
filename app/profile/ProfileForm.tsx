@@ -12,7 +12,7 @@ interface ProfileFormProps {
 }
 
 export function ProfileForm({ initialUser }: ProfileFormProps) {
-  const { user, updateUsername, setDevMode, loading, error, success } = useProfile(initialUser)
+  const { user, updateUsername, setDevMode, loading, error, devModeError, success } = useProfile(initialUser)
   const { logout } = useAuth()
   const [newUsername, setNewUsername] = useState(user.username)
 
@@ -61,32 +61,37 @@ export function ProfileForm({ initialUser }: ProfileFormProps) {
       </form>
     </div>
 
-    <div className="flex items-center justify-between gap-4 rounded-xl border border-border px-4 py-3">
-      <div className="min-w-0">
-        <p className="text-xs font-medium text-text-secondary">Developer mode</p>
-        <p className="text-[11px] text-text-muted mt-0.5">
-          Bot arena &amp; dev tools
-        </p>
-      </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={user.dev_mode}
-        aria-label="Developer mode"
-        onClick={() => setDevMode(!user.dev_mode)}
-        className={[
-          'relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border transition-colors',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
-          user.dev_mode ? 'bg-accent border-accent' : 'bg-text-muted/30 border-text-muted/40',
-        ].join(' ')}
-      >
-        <span
+    <div className="rounded-xl border border-border px-4 py-3">
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-text-secondary">Developer mode</p>
+          <p className="text-[11px] text-text-muted mt-0.5">
+            Bot arena &amp; dev tools
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={user.dev_mode}
+          aria-label="Developer mode"
+          onClick={() => setDevMode(!user.dev_mode)}
           className={[
-            'inline-block size-5 transform rounded-full bg-white shadow transition-transform',
-            user.dev_mode ? 'translate-x-5' : 'translate-x-0.5',
+            'relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border transition-colors',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+            user.dev_mode ? 'bg-accent border-accent' : 'bg-text-muted/30 border-text-muted/40',
           ].join(' ')}
-        />
-      </button>
+        >
+          <span
+            className={[
+              'inline-block size-5 transform rounded-full bg-white shadow transition-transform',
+              user.dev_mode ? 'translate-x-5' : 'translate-x-0.5',
+            ].join(' ')}
+          />
+        </button>
+      </div>
+      {devModeError && (
+        <p className="mt-2 text-xs text-danger">{devModeError}</p>
+      )}
     </div>
     </div>
   )

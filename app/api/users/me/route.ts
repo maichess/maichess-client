@@ -25,6 +25,11 @@ export async function PATCH(req: Request) {
     body: JSON.stringify(body),
   })
 
-  const data = await res.json()
-  return Response.json(data, { status: res.status })
+  const text = await res.text()
+  try {
+    const data = JSON.parse(text)
+    return Response.json(data, { status: res.status })
+  } catch {
+    return Response.json({ error: text || 'Unknown error' }, { status: res.status })
+  }
 }

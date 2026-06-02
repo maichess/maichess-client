@@ -1,13 +1,30 @@
 'use client'
 
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useMatchHistory } from '@/lib/hooks/useMatchHistory'
 import { playerDisplayName, type MatchStatus, type MatchSummary } from '@/lib/models/match'
 import { formatTimeFormatLabel } from '@/lib/utils/time'
+import { ROUTES } from '@/lib/constants/routes'
 import { Button } from '@/lib/components/ui/Button'
 import { Spinner } from '@/lib/components/ui/Spinner'
 
 export function MatchHistory() {
   const { data, loading, error, totalPages, nextPage, prevPage } = useMatchHistory()
+  const router = useRouter()
+  const [importing, setImporting] = useState<string | null>(null)
+
+  async function handleAnalyse(matchId: string) {
+    setImporting(matchId)
+    try {
+      const res = await fetch(`/api/games/from-match/${matchId}`, { method: 'POST' })
+      if (!res.ok) return
+      const game: { id: string } = await res.json()
+      router.push(ROUTES.analysisGame(game.id))
+    } finally {
+      setImporting(null)
+    }
+  }
 
   if (loading) {
     return (
@@ -37,7 +54,12 @@ export function MatchHistory() {
     <>
       <div className="space-y-2">
         {data.matches.map((m) => (
-          <MatchHistoryRow key={m.id} match={m} />
+          <MatchHistoryRow
+            key={m.id}
+            match={m}
+            onAnalyse={() => handleAnalyse(m.id)}
+            importing={importing === m.id}
+          />
         ))}
       </div>
 
@@ -58,7 +80,15 @@ export function MatchHistory() {
   )
 }
 
-function MatchHistoryRow({ match }: { match: MatchSummary }) {
+function MatchHistoryRow({
+  match,
+  onAnalyse,
+  importing,
+}: {
+  match: MatchSummary
+  onAnalyse: () => void
+  importing: boolean
+}) {
   const date =
     match.finished_at_ms && match.finished_at_ms > 0
       ? new Date(match.finished_at_ms).toLocaleDateString()
@@ -84,6 +114,9 @@ function MatchHistoryRow({ match }: { match: MatchSummary }) {
             .join(' · ')}
         </div>
       </div>
+      <Button size="sm" variant="secondary" onClick={onAnalyse} loading={importing}>
+        Analyse
+      </Button>
     </div>
   )
 }
