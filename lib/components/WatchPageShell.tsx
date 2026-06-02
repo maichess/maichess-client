@@ -121,8 +121,13 @@ export function WatchPageShell({ matches, total, page, hasMore, validCategory }:
                           <span className="ml-1 text-xs text-text-muted">(BOT)</span>
                         )}
                       </div>
-                      <div className="mt-0.5 text-xs text-text-muted">
-                        {formatTimeFormatLabel(m.time_format)} · {m.move_count} move{m.move_count === 1 ? '' : 's'}
+                      <div className="mt-0.5 flex items-center gap-2 text-xs text-text-muted">
+                        <span>{formatTimeFormatLabel(m.time_format)} · {m.move_count} move{m.move_count === 1 ? '' : 's'}</span>
+                        {m.source === 'external' && (
+                          <span className="rounded-full border border-border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide">
+                            {m.external_provider || 'external'}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <span className="ml-3 text-xs text-accent">Watch →</span>

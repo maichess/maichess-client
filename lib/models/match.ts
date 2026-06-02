@@ -1,6 +1,7 @@
 export type UserPlayer = { user_id: string; username: string }
 export type BotPlayer = { bot_id: string; name: string }
-export type Player = UserPlayer | BotPlayer
+export type ExternalPlayer = { external_name: string }
+export type Player = UserPlayer | BotPlayer | ExternalPlayer
 
 export type MatchStatus = 'ongoing' | 'white_won' | 'black_won' | 'draw'
 export type MatchSource = 'native' | 'external'
@@ -77,6 +78,16 @@ export function isUserPlayer(p: Player): p is UserPlayer {
   return 'user_id' in p
 }
 
+export function isBotPlayer(p: Player): p is BotPlayer {
+  return 'bot_id' in p
+}
+
+export function isExternalPlayer(p: Player): p is ExternalPlayer {
+  return 'external_name' in p
+}
+
 export function playerDisplayName(p: Player): string {
-  return isUserPlayer(p) ? p.username : p.name
+  if (isUserPlayer(p)) return p.username
+  if (isBotPlayer(p)) return p.name
+  return p.external_name
 }

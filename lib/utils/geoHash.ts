@@ -1,5 +1,5 @@
 import type { Player, MatchSummary } from '@/lib/models/match'
-import { isUserPlayer, playerDisplayName } from '@/lib/models/match'
+import { isUserPlayer, isBotPlayer, playerDisplayName } from '@/lib/models/match'
 
 export interface GlobeArc {
   matchId: string
@@ -43,14 +43,17 @@ function hashToLatLng(key: string): { lat: number; lng: number } {
 }
 
 export function playerLatLng(p: Player): { lat: number; lng: number } {
-  if (!isUserPlayer(p)) {
+  if (isUserPlayer(p)) {
+    return hashToLatLng(p.user_id)
+  }
+  if (isBotPlayer(p)) {
     const key = p.name.toLowerCase()
     for (const [prefix, loc] of Object.entries(BOT_LOCATIONS)) {
       if (key.startsWith(prefix)) return loc
     }
     return hashToLatLng(p.bot_id)
   }
-  return hashToLatLng(p.user_id)
+  return hashToLatLng(p.external_name)
 }
 
 export function matchArcs(matches: MatchSummary[]): GlobeArc[] {

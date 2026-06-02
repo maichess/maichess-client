@@ -32,6 +32,12 @@ export async function Nav() {
             Watch
           </Link>
           <Link
+            href={ROUTES.tournaments}
+            className="rounded-lg px-3 py-1.5 text-sm text-text-secondary hover:bg-bg-elevated hover:text-text-primary transition-colors"
+          >
+            Tournaments
+          </Link>
+          <Link
             href={ROUTES.analysis}
             className="rounded-lg px-3 py-1.5 text-sm text-text-secondary hover:bg-bg-elevated hover:text-text-primary transition-colors"
           >

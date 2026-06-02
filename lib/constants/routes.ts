@@ -10,5 +10,7 @@ export const ROUTES = {
   profile: '/profile',
   analysis: '/analysis',
   analysisGame: (id: string) => `/analysis/${id}`,
+  tournaments: '/tournaments',
+  tournament: (id: string) => `/tournaments/${id}`,
   dev: '/dev',
 } as const
