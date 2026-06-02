@@ -11,4 +11,7 @@ export const ROUTES = {
   analysis: '/analysis',
   analysisGame: (id: string) => `/analysis/${id}`,
   dev: '/dev',
+  arenaNew: '/dev/arena/new',
+  arenaList: '/dev/arena',
+  arenaCollection: (id: string) => `/dev/arena/${id}`,
 } as const

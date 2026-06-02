@@ -1,9 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { User } from '@/lib/models/user'
 
 export function useProfile(initialUser: User) {
+  const router = useRouter()
   const [user, setUser] = useState<User>(initialUser)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -52,6 +54,7 @@ export function useProfile(initialUser: User) {
     setUser({ ...user, dev_mode: devMode })
     const updated = await patchProfile({ dev_mode: devMode })
     setUser(updated ?? previous)
+    if (updated) router.refresh()
   }
 
   return { user, updateUsername, setDevMode, loading, error, success }

@@ -1,11 +1,14 @@
 'use client'
 
 import { useCallback, useMemo, useState } from 'react'
-import { X } from 'lucide-react'
+import { X, Bot } from 'lucide-react'
 import type { AnalysisConfig, AnalysisGameDetail } from '@/lib/models/analysis'
+import { playerInfoName } from '@/lib/models/analysis'
 import { useAnalysisSession } from '@/lib/hooks/useAnalysisSession'
 import { useAnalysisBoardInput } from '@/lib/hooks/useAnalysisBoardInput'
 import { buildAnalysisArrows } from '@/lib/utils/analysisArrows'
+import { computeCaptured } from '@/lib/utils/captured'
+import { pieceGlyph } from '@/lib/utils/captured'
 import { ChessBoard } from './ChessBoard'
 import { AnalysisPanel } from './analysis/AnalysisPanel'
 import { AnalysisMoveList } from './analysis/AnalysisMoveList'
@@ -49,6 +52,18 @@ export function AnalysisClient({ game, config }: AnalysisClientProps) {
     [state.currentLines, actualMoveUci]
   )
 
+  const captured = useMemo(() => {
+    const visibleMoves = inWhatif
+      ? [...game.moves.slice(0, state.currentIndex), ...state.whatifMoves]
+      : game.moves.slice(0, state.currentIndex)
+    return computeCaptured(game.starting_fen, visibleMoves)
+  }, [game.starting_fen, game.moves, state.currentIndex, state.whatifMoves, inWhatif])
+
+  const whiteName = playerInfoName(game.white)
+  const blackName = playerInfoName(game.black)
+  const whiteIsBot = !!game.white.bot_id
+  const blackIsBot = !!game.black.bot_id
+
   async function handleExportPgn() {
     const pgn = await exportWhatifPgn()
     if (pgn) setPgnModal(pgn)
@@ -67,6 +82,14 @@ export function AnalysisClient({ game, config }: AnalysisClientProps) {
           </div>
         )}
 
+        <AnalysisPlayerBar
+          name={blackName}
+          side="black"
+          isBot={blackIsBot}
+          captured={captured.byBlack}
+          materialAdvantage={Math.max(0, -captured.diff)}
+        />
+
         {/* Board with whatif ring */}
         <div className={inWhatif ? 'ring-2 ring-amber-400/70 rounded-xl' : ''}>
           <ChessBoard
@@ -80,6 +103,14 @@ export function AnalysisClient({ game, config }: AnalysisClientProps) {
             arrows={boardArrows}
           />
         </div>
+
+        <AnalysisPlayerBar
+          name={whiteName}
+          side="white"
+          isBot={whiteIsBot}
+          captured={captured.byWhite}
+          materialAdvantage={Math.max(0, captured.diff)}
+        />
 
         {/* Navigation controls */}
         <div className="flex gap-1 justify-center">
@@ -159,7 +190,7 @@ export function AnalysisClient({ game, config }: AnalysisClientProps) {
         />
       </div>
 
-      {/* Whatif PGN modal */}
+      {/* PGN modal */}
       {pgnModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg rounded-2xl border border-border bg-bg-secondary shadow-2xl">
@@ -191,6 +222,53 @@ export function AnalysisClient({ game, config }: AnalysisClientProps) {
               </Button>
             </div>
           </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AnalysisPlayerBar({
+  name,
+  side,
+  isBot,
+  captured,
+  materialAdvantage,
+}: {
+  name: string
+  side: 'white' | 'black'
+  isBot: boolean
+  captured: string[]
+  materialAdvantage: number
+}) {
+  const hasCaptured = captured.length > 0
+
+  return (
+    <div className="flex items-center gap-3 rounded-xl bg-bg-secondary border border-border px-4 py-2">
+      <div
+        className={[
+          'size-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0',
+          side === 'white'
+            ? 'bg-white text-gray-900 border border-border'
+            : 'bg-gray-900 text-white border border-gray-700',
+        ].join(' ')}
+      >
+        {isBot ? <Bot size={16} /> : name[0]?.toUpperCase() ?? '?'}
+      </div>
+      <div className="flex items-center gap-2 min-w-0">
+        <span className="text-sm font-medium text-text-primary truncate">{name}</span>
+        {isBot && (
+          <span className="text-[10px] px-1 py-0.5 rounded bg-accent/20 text-accent font-medium shrink-0">
+            BOT
+          </span>
+        )}
+      </div>
+      {hasCaptured && (
+        <div className="ml-auto flex items-center gap-1 text-base leading-none text-text-muted">
+          <span className="tracking-tight">{captured.map((p) => pieceGlyph(p)).join('')}</span>
+          {materialAdvantage > 0 && (
+            <span className="text-[10px] font-semibold text-accent">+{materialAdvantage}</span>
+          )}
         </div>
       )}
     </div>
