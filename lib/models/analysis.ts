@@ -51,5 +51,5 @@ export interface AnalysisConfig {
 }
 
 export function playerInfoName(p: PlayerInfo): string {
-  return p.username ?? p.name ?? p.bot_id ?? 'Unknown'
+  return p.username ?? p.name ?? p.bot_id ?? p.user_id ?? 'Unknown'
 }

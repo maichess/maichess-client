@@ -13,4 +13,7 @@ export const ROUTES = {
   tournaments: '/tournaments',
   tournament: (id: string) => `/tournaments/${id}`,
   dev: '/dev',
+  arenaNew: '/dev/arena/new',
+  arenaList: '/dev/arena',
+  arenaCollection: (id: string) => `/dev/arena/${id}`,
 } as const
