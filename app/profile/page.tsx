@@ -2,6 +2,7 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import type { User } from '@/lib/models/user'
 import { ROUTES } from '@/lib/constants/routes'
+import { MatchHistory } from '@/lib/components/MatchHistory'
 import { ProfileForm } from './ProfileForm'
 
 async function getUser(): Promise<User | null> {
@@ -66,6 +67,14 @@ export default async function ProfilePage() {
 
         {/* Edit form */}
         <ProfileForm initialUser={user} />
+
+        {/* Past Matches */}
+        <div className="mt-8">
+          <h2 className="mb-4 text-sm font-semibold text-text-muted uppercase tracking-wider">
+            Past Matches
+          </h2>
+          <MatchHistory />
+        </div>
     </div>
   )
 }

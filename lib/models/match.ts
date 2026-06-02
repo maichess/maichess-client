@@ -3,6 +3,7 @@ export type BotPlayer = { bot_id: string; name: string }
 export type Player = UserPlayer | BotPlayer
 
 export type MatchStatus = 'ongoing' | 'white_won' | 'black_won' | 'draw'
+export type MatchSource = 'native' | 'external'
 export type TimeFormatCategory = 'bullet' | 'blitz' | 'rapid' | 'classical'
 export type EndReason = 'checkmate' | 'resignation' | 'stalemate' | 'timeout' | 'draw_agreement'
 
@@ -36,7 +37,11 @@ export interface MatchSummary {
   white_time_ms: number
   black_time_ms: number
   last_move_at_ms: number
+  finished_at_ms?: number
   move_count: number
+  created_by?: Player | null
+  source?: MatchSource
+  external_provider?: string
 }
 
 export interface MatchListResponse {
