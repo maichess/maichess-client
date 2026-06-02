@@ -1,28 +1,14 @@
-import { cookies } from 'next/headers'
-
-const BRIDGE = process.env.TOURNAMENT_BRIDGE_URL!
+import { bridgeFetch } from '@/lib/utils/proxyFetch'
 
 export async function GET() {
-  const cookieStore = await cookies()
-  const res = await fetch(`${BRIDGE}/config`, {
-    headers: { Cookie: cookieStore.toString() },
-    cache: 'no-store',
-  })
-  const data = await res.json()
-  return Response.json(data, { status: res.status })
+  return bridgeFetch('/config')
 }
 
 export async function PUT(request: Request) {
-  const cookieStore = await cookies()
   const body = await request.json()
-  const res = await fetch(`${BRIDGE}/config`, {
+  return bridgeFetch('/config', {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      Cookie: cookieStore.toString(),
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-  const data = await res.json()
-  return Response.json(data, { status: res.status })
 }

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { ROUTES } from '@/lib/constants/routes'
 import { useTournaments } from '@/lib/hooks/useTournaments'
+import { useTournamentConfig } from '@/lib/hooks/useTournamentConfig'
 import { Spinner } from '@/lib/components/ui/Spinner'
 import { Button } from '@/lib/components/ui/Button'
 import { TournamentCreateForm } from './TournamentCreateForm'
@@ -54,8 +55,65 @@ function TournamentSection({ title, tournaments, badge }: { title: string; tourn
   )
 }
 
+const inputClass =
+  'w-full rounded-lg border border-border bg-bg-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none'
+
+function ServerConfig({ onServerChange }: { onServerChange: (url: string | undefined) => void }) {
+  const { config, loading: configLoading, updateConfig } = useTournamentConfig()
+  const [showConfig, setShowConfig] = useState(false)
+  const [serverInput, setServerInput] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  if (configLoading || !config) return null
+
+  return (
+    <div className="space-y-2">
+      <button
+        onClick={() => setShowConfig(!showConfig)}
+        className="text-xs text-text-muted hover:text-accent transition-colors"
+      >
+        Server: {config.default_server_url} {showConfig ? '▴' : '▾'}
+      </button>
+
+      {showConfig && (
+        <div className="rounded-xl border border-border bg-bg-secondary p-3 space-y-2">
+          <label className="block text-xs text-text-muted">Default Tournament Server URL</label>
+          <div className="flex gap-2">
+            <input
+              className={inputClass}
+              value={serverInput || config.default_server_url}
+              onChange={(e) => setServerInput(e.target.value)}
+              placeholder="http://tournament-server:8080"
+            />
+            <Button
+              size="sm"
+              loading={saving}
+              onClick={async () => {
+                if (!serverInput || serverInput === config.default_server_url) return
+                setSaving(true)
+                try {
+                  await updateConfig({ default_server_url: serverInput })
+                  onServerChange(undefined)
+                } finally {
+                  setSaving(false)
+                }
+              }}
+            >
+              Save
+            </Button>
+          </div>
+          <p className="text-[10px] text-text-muted">
+            Changes which tournament server the bridge connects to. Affects all new tournaments.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function TournamentList() {
-  const { data, loading, error, refresh } = useTournaments()
+  const [serverOverride, setServerOverride] = useState<string | undefined>(undefined)
+  const { data, loading, error, refresh } = useTournaments(serverOverride)
   const [showCreate, setShowCreate] = useState(false)
 
   if (loading) {
@@ -68,8 +126,11 @@ export function TournamentList() {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
-        {error}
+      <div className="space-y-4">
+        <ServerConfig onServerChange={(url) => { setServerOverride(url); refresh() }} />
+        <div className="rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
+          {error}
+        </div>
       </div>
     )
   }
@@ -78,6 +139,8 @@ export function TournamentList() {
 
   return (
     <div className="space-y-6">
+      <ServerConfig onServerChange={(url) => { setServerOverride(url); refresh() }} />
+
       <div className="flex items-center justify-between">
         <span className="text-sm text-text-muted">
           {totalCount} tournament{totalCount === 1 ? '' : 's'}

@@ -1,6 +1,4 @@
-import { cookies } from 'next/headers'
-
-const BRIDGE = process.env.TOURNAMENT_BRIDGE_URL!
+import { bridgeFetch } from '@/lib/utils/proxyFetch'
 
 type Ctx = { params: Promise<{ id: string; round: string }> }
 
@@ -11,11 +9,5 @@ export async function GET(request: Request, ctx: Ctx) {
   const server = searchParams.get('server')
   if (server) params.set('server', server)
 
-  const cookieStore = await cookies()
-  const res = await fetch(`${BRIDGE}/tournaments/${id}/rounds/${round}?${params}`, {
-    headers: { Cookie: cookieStore.toString() },
-    cache: 'no-store',
-  })
-  const data = await res.json()
-  return Response.json(data, { status: res.status })
+  return bridgeFetch(`/tournaments/${id}/rounds/${round}?${params}`)
 }
