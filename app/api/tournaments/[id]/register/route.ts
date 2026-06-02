@@ -12,7 +12,10 @@ export async function POST(request: Request, ctx: Ctx) {
   })
 }
 
-export async function DELETE(_request: Request, ctx: Ctx) {
+export async function DELETE(request: Request, ctx: Ctx) {
   const { id } = await ctx.params
-  return bridgeFetch(`/tournaments/${id}/register`, { method: 'DELETE' })
+  const { searchParams } = new URL(request.url)
+  const botId = searchParams.get('bot_id')
+  const params = botId ? `?bot_id=${encodeURIComponent(botId)}` : ''
+  return bridgeFetch(`/tournaments/${id}/register${params}`, { method: 'DELETE' })
 }

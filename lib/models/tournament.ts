@@ -47,12 +47,15 @@ export interface TournamentDetail {
       players: TournamentStanding[]
     }
   }
-  registration?: {
-    registration_id: string
-    maichess_bot_id: string
-    status: string
-  }
+  is_director: boolean
+  registrations: BotRegistration[]
   game_mappings: GameMapping[]
+}
+
+export interface BotRegistration {
+  registration_id: string
+  maichess_bot_id: string
+  status: string
 }
 
 export interface GameMapping {

@@ -42,8 +42,8 @@ export function useTournament(id: string, serverUrl?: string) {
     refresh()
   }, [id, refresh])
 
-  const withdrawBot = useCallback(async () => {
-    const res = await fetch(`/api/tournaments/${id}/register`, { method: 'DELETE' })
+  const withdrawBot = useCallback(async (botId: string) => {
+    const res = await fetch(`/api/tournaments/${id}/register?bot_id=${encodeURIComponent(botId)}`, { method: 'DELETE' })
     if (!res.ok) throw new Error(`Failed to withdraw (${res.status})`)
     refresh()
   }, [id, refresh])

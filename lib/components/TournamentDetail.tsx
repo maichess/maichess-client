@@ -10,6 +10,7 @@ import { TournamentStandings } from './TournamentStandings'
 import { TournamentRounds } from './TournamentRounds'
 import { Spinner } from '@/lib/components/ui/Spinner'
 import { Button } from '@/lib/components/ui/Button'
+import type { BotRegistration } from '@/lib/models/tournament'
 
 interface Props {
   id: string
@@ -81,11 +82,12 @@ export function TournamentDetail({ id }: Props) {
     )
   }
 
-  const { tournament, registration } = data
+  const { tournament, is_director, registrations } = data
   const standings = tournament.standing?.players ?? []
   const isCreated = tournament.status === 'created'
   const isStarted = tournament.status === 'started'
-  const isRegistered = !!registration
+  const registeredBotIds = new Set(registrations.map((r: BotRegistration) => r.maichess_bot_id))
+  const availableBots = bots.filter((b) => !registeredBotIds.has(b.id))
 
   const inputClass =
     'rounded-lg border border-border bg-bg-elevated px-3 py-2 text-sm text-text-primary focus:border-accent focus:outline-none'
@@ -113,66 +115,81 @@ export function TournamentDetail({ id }: Props) {
 
       {isCreated && (
         <div className="rounded-xl border border-border bg-bg-secondary p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-text-muted uppercase tracking-wider">Actions</h3>
-          <div className="flex flex-wrap items-center gap-3">
-            {!isRegistered && (
-              <div className="flex items-center gap-2">
-                <select
-                  className={inputClass}
-                  value={selectedBot}
-                  onChange={(e) => setSelectedBot(e.target.value)}
-                >
-                  <option value="">Select bot...</option>
-                  {bots.map((b) => (
-                    <option key={b.id} value={b.id}>{b.name} ({b.elo})</option>
-                  ))}
-                </select>
-                <Button
-                  size="sm"
-                  onClick={() => handleAction(() => registerBot(selectedBot))}
-                  disabled={!selectedBot}
-                  loading={actionLoading}
-                >
-                  Register
-                </Button>
-              </div>
-            )}
-            {isRegistered && (
+          <h3 className="text-sm font-semibold text-text-muted uppercase tracking-wider">Register Bots</h3>
+
+          {registrations.length > 0 && (
+            <div className="space-y-1">
+              {registrations.map((reg: BotRegistration) => (
+                <div key={reg.registration_id} className="flex items-center justify-between rounded-lg bg-bg-elevated px-3 py-2">
+                  <span className="text-sm text-text-primary font-medium">{reg.maichess_bot_id}</span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleAction(() => withdrawBot(reg.maichess_bot_id))}
+                    loading={actionLoading}
+                  >
+                    Withdraw
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {availableBots.length > 0 && (
+            <div className="flex items-center gap-2">
+              <select
+                className={inputClass}
+                value={selectedBot}
+                onChange={(e) => setSelectedBot(e.target.value)}
+              >
+                <option value="">Select bot...</option>
+                {availableBots.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name} ({b.elo})</option>
+                ))}
+              </select>
               <Button
                 size="sm"
-                variant="secondary"
-                onClick={() => handleAction(withdrawBot)}
+                onClick={() => handleAction(async () => {
+                  await registerBot(selectedBot)
+                  setSelectedBot('')
+                })}
+                disabled={!selectedBot}
                 loading={actionLoading}
               >
-                Withdraw {registration.maichess_bot_id}
+                Register
               </Button>
-            )}
-            <Button
-              size="sm"
-              onClick={() => handleAction(startTournament)}
-              disabled={tournament.nbPlayers < 2}
-              loading={actionLoading}
-            >
-              Start Tournament
-            </Button>
-            <Button
-              size="sm"
-              variant="danger"
-              onClick={() => handleAction(async () => {
-                await deleteTournament()
-                router.push(ROUTES.tournaments)
-              })}
-              loading={actionLoading}
-            >
-              Delete
-            </Button>
-          </div>
+            </div>
+          )}
+
+          {is_director && (
+            <div className="flex items-center gap-3 pt-2 border-t border-border">
+              <Button
+                size="sm"
+                onClick={() => handleAction(startTournament)}
+                disabled={tournament.nbPlayers < 2}
+                loading={actionLoading}
+              >
+                Start Tournament
+              </Button>
+              <Button
+                size="sm"
+                variant="danger"
+                onClick={() => handleAction(async () => {
+                  await deleteTournament()
+                  router.push(ROUTES.tournaments)
+                })}
+                loading={actionLoading}
+              >
+                Delete
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
-      {isRegistered && isStarted && (
+      {registrations.length > 0 && isStarted && (
         <div className="rounded-lg border border-accent/30 bg-accent/5 px-4 py-2 text-sm text-accent">
-          Playing as <span className="font-semibold">{registration.maichess_bot_id}</span>
+          Playing as {registrations.map((r: BotRegistration) => r.maichess_bot_id).join(', ')}
         </div>
       )}
 
