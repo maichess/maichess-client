@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import type { User } from '@/lib/models/user'
+import { isProvisionalRating } from '@/lib/models/user'
 import { ROUTES } from '@/lib/constants/routes'
 import { MatchHistory } from '@/lib/components/MatchHistory'
 import { ProfileForm } from './ProfileForm'
@@ -20,6 +21,7 @@ export default async function ProfilePage() {
   if (!user) redirect(ROUTES.login)
 
   const total = user.wins + user.losses + user.draws
+  const provisional = isProvisionalRating(user)
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-10">
@@ -31,9 +33,19 @@ export default async function ProfilePage() {
             Statistics
           </h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div>
-              <div className="text-3xl font-bold text-accent tabular-nums">{user.elo}</div>
-              <div className="text-xs text-text-muted mt-0.5">ELO</div>
+            <div
+              title={`Glicko-2 rating: ${user.rating.toFixed(1)} ± ${Math.round(user.rating_deviation)}${
+                provisional ? ' (provisional — still settling)' : ''
+              }`}
+            >
+              <div className="text-3xl font-bold text-accent tabular-nums">
+                {user.elo}
+                {provisional && <span className="align-top text-base text-text-muted">?</span>}
+              </div>
+              <div className="text-xs text-text-muted mt-0.5">
+                Rating
+                <span className="ml-1 tabular-nums">± {Math.round(user.rating_deviation)}</span>
+              </div>
             </div>
             <div>
               <div className="text-3xl font-bold text-text-primary tabular-nums">{user.wins}</div>
