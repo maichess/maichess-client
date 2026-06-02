@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { X } from 'lucide-react'
 import { Button } from './ui/Button'
 
 interface ExportGamePanelProps {
@@ -64,10 +65,10 @@ export function ExportGamePanel({ pgn, fen }: ExportGamePanelProps) {
               <h2 className="text-base font-semibold text-text-primary">{modal.title}</h2>
               <button
                 onClick={close}
-                className="text-text-muted hover:text-text-primary transition-colors text-lg"
+                className="text-text-muted hover:text-text-primary transition-colors"
                 aria-label="Close"
               >
-                ✕
+                <X size={18} />
               </button>
             </div>
             <div className="px-5 py-4 space-y-3">

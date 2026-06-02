@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ThemeSelector } from './ThemeSelector'
+import { PawnIcon } from './icons/PawnIcon'
 import { ROUTES } from '@/lib/constants/routes'
 import { getServerUser } from '@/lib/utils/serverUser'
 
@@ -13,7 +14,7 @@ export async function Nav() {
           href={ROUTES.dashboard}
           className="flex items-center gap-2 font-semibold text-text-primary tracking-tight hover:text-accent transition-colors"
         >
-          <span className="text-xl">♟</span>
+          <PawnIcon size={20} />
           <span>maichess</span>
         </Link>
 

@@ -9,6 +9,7 @@ import { useBots } from '@/lib/hooks/useBots'
 import { useTimeFormats } from '@/lib/hooks/useTimeFormats'
 import { formatTimeFormatDuration, formatTimeFormatLabel } from '@/lib/utils/time'
 import { ROUTES } from '@/lib/constants/routes'
+import { Swords, Bot, Users } from 'lucide-react'
 import type { OpponentType, QueueRequest } from '@/lib/models/queue'
 import type { TimeFormat, TimeFormatCategory } from '@/lib/models/match'
 
@@ -110,7 +111,10 @@ function PlayForm() {
                       : 'border-border bg-bg-secondary text-text-secondary hover:border-accent/40',
                   ].join(' ')}
                 >
-                  {type === 'human' ? '⚔ Human' : type === 'bot' ? '🤖 Bot' : '🤖🤖 Bot vs Bot'}
+                  <span className="flex items-center justify-center gap-1.5">
+                    {type === 'human' ? <Swords size={15} /> : type === 'bot' ? <Bot size={15} /> : <Users size={15} />}
+                    {type === 'human' ? 'Human' : type === 'bot' ? 'Bot' : 'Bot vs Bot'}
+                  </span>
                 </button>
               ))}
             </div>

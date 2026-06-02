@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useState } from 'react'
+import { X } from 'lucide-react'
 import type { AnalysisConfig, AnalysisGameDetail } from '@/lib/models/analysis'
 import { useAnalysisSession } from '@/lib/hooks/useAnalysisSession'
 import { useAnalysisBoardInput } from '@/lib/hooks/useAnalysisBoardInput'
@@ -166,9 +167,10 @@ export function AnalysisClient({ game, config }: AnalysisClientProps) {
               <h2 className="text-base font-semibold text-text-primary">Whatif PGN</h2>
               <button
                 onClick={() => setPgnModal(null)}
-                className="text-text-muted hover:text-text-primary transition-colors text-lg"
+                className="text-text-muted hover:text-text-primary transition-colors"
+                aria-label="Close"
               >
-                ✕
+                <X size={18} />
               </button>
             </div>
             <div className="px-5 py-4 space-y-3">

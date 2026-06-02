@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { X } from 'lucide-react'
 import { ROUTES } from '@/lib/constants/routes'
 import { Button } from '@/lib/components/ui/Button'
 
@@ -69,9 +70,10 @@ export function ImportModal({ onClose }: ImportModalProps) {
           <h2 className="text-base font-semibold text-text-primary">Import Game</h2>
           <button
             onClick={onClose}
-            className="text-text-muted hover:text-text-primary transition-colors text-lg leading-none"
+            className="text-text-muted hover:text-text-primary transition-colors"
+            aria-label="Close"
           >
-            ✕
+            <X size={18} />
           </button>
         </div>
 

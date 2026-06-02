@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { Button } from '@/lib/components/ui/Button'
 import { Input } from '@/lib/components/ui/Input'
+import { PawnIcon } from '@/lib/components/icons/PawnIcon'
 import { ROUTES } from '@/lib/constants/routes'
 
 export default function LoginPage() {
@@ -22,7 +23,9 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="mb-8 text-center">
-          <span className="text-5xl">♟</span>
+          <div className="flex justify-center">
+            <PawnIcon size={48} className="text-accent" />
+          </div>
           <h1 className="mt-3 text-2xl font-bold text-text-primary">maichess</h1>
           <p className="mt-1 text-sm text-text-muted">Sign in to your account</p>
         </div>

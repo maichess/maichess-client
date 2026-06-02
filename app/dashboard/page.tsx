@@ -1,6 +1,8 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import type { ReactNode } from 'react'
+import { Swords, Bot, Tv, BarChart2 } from 'lucide-react'
 import type { User } from '@/lib/models/user'
 import { ROUTES } from '@/lib/constants/routes'
 
@@ -56,25 +58,25 @@ export default async function DashboardPage() {
             href={ROUTES.play}
             title="Find opponent"
             description="Enter matchmaking queue and play against another human"
-            icon="⚔"
+            icon={<Swords size={24} />}
           />
           <PlayOption
             href={`${ROUTES.play}?opponent=bot`}
             title="Play vs bot"
             description="Challenge a computer opponent of your choice"
-            icon="🤖"
+            icon={<Bot size={24} />}
           />
           <PlayOption
             href={ROUTES.watch}
             title="Watch"
             description="Watch live matches as they happen"
-            icon="📺"
+            icon={<Tv size={24} />}
           />
           <PlayOption
             href={ROUTES.analysis}
             title="Analyse"
             description="Import and analyse games with engine assistance"
-            icon="♟"
+            icon={<BarChart2 size={24} />}
           />
         </div>
       </div>
@@ -102,7 +104,7 @@ function PlayOption({
   href: string
   title: string
   description: string
-  icon: string
+  icon: ReactNode
 }) {
   return (
     <Link
@@ -112,7 +114,7 @@ function PlayOption({
         'hover:border-accent/50 hover:bg-bg-elevated/80 transition-all duration-150 group',
       ].join(' ')}
     >
-      <span className="text-2xl mt-0.5">{icon}</span>
+      <span className="mt-0.5 text-text-muted group-hover:text-accent transition-colors">{icon}</span>
       <div>
         <div className="font-semibold text-text-primary group-hover:text-accent transition-colors">
           {title}

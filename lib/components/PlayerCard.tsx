@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { Bot } from 'lucide-react'
 import type { Player } from '@/lib/models/match'
 import { playerDisplayName, isUserPlayer } from '@/lib/models/match'
 import { msToClockString, isCriticalTime } from '@/lib/utils/time'
@@ -83,7 +84,7 @@ export function PlayerCard({
               : 'bg-gray-900 text-white border border-gray-700',
           ].join(' ')}
         >
-          {isBot ? '🤖' : displayName[0].toUpperCase()}
+          {isBot ? <Bot size={18} /> : displayName[0].toUpperCase()}
         </div>
 
         <div className="min-w-0">
