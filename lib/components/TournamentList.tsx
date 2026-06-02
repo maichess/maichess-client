@@ -58,18 +58,26 @@ function TournamentSection({ title, tournaments, badge }: { title: string; tourn
 const inputClass =
   'w-full rounded-lg border border-border bg-bg-elevated px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none'
 
-function ServerConfig({ onServerChange }: { onServerChange: (url: string | undefined) => void }) {
+function ServerConfig({ onServerChange }: { onServerChange: () => void }) {
   const { config, loading: configLoading, updateConfig } = useTournamentConfig()
   const [showConfig, setShowConfig] = useState(false)
-  const [serverInput, setServerInput] = useState('')
+  const [serverInput, setServerInput] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
 
   if (configLoading || !config) return null
+
+  const currentValue = serverInput ?? config.default_server_url
+  const isDirty = serverInput !== null && serverInput !== config.default_server_url
 
   return (
     <div className="space-y-2">
       <button
-        onClick={() => setShowConfig(!showConfig)}
+        onClick={() => {
+          setShowConfig(!showConfig)
+          setServerInput(null)
+          setSaved(false)
+        }}
         className="text-xs text-text-muted hover:text-accent transition-colors"
       >
         Server: {config.default_server_url} {showConfig ? '▴' : '▾'}
@@ -77,33 +85,42 @@ function ServerConfig({ onServerChange }: { onServerChange: (url: string | undef
 
       {showConfig && (
         <div className="rounded-xl border border-border bg-bg-secondary p-3 space-y-2">
-          <label className="block text-xs text-text-muted">Default Tournament Server URL</label>
+          <label className="block text-xs text-text-muted">Tournament Server URL</label>
           <div className="flex gap-2">
             <input
               className={inputClass}
-              value={serverInput || config.default_server_url}
-              onChange={(e) => setServerInput(e.target.value)}
-              placeholder="http://tournament-server:8080"
+              value={currentValue}
+              onChange={(e) => {
+                setServerInput(e.target.value)
+                setSaved(false)
+              }}
+              placeholder="https://tournament.example.com"
             />
             <Button
               size="sm"
+              variant={saved ? 'secondary' : 'primary'}
               loading={saving}
+              disabled={!isDirty}
               onClick={async () => {
-                if (!serverInput || serverInput === config.default_server_url) return
+                if (!isDirty) return
                 setSaving(true)
                 try {
-                  await updateConfig({ default_server_url: serverInput })
-                  onServerChange(undefined)
+                  await updateConfig({ default_server_url: serverInput! })
+                  setServerInput(null)
+                  setSaved(true)
+                  onServerChange()
+                } catch {
+                  // error handled by hook
                 } finally {
                   setSaving(false)
                 }
               }}
             >
-              Save
+              {saved ? 'Saved' : 'Save'}
             </Button>
           </div>
           <p className="text-[10px] text-text-muted">
-            Changes which tournament server the bridge connects to. Affects all new tournaments.
+            The URL the bridge uses to reach the tournament server. Change this to connect to a different server.
           </p>
         </div>
       )}
@@ -112,8 +129,7 @@ function ServerConfig({ onServerChange }: { onServerChange: (url: string | undef
 }
 
 export function TournamentList() {
-  const [serverOverride, setServerOverride] = useState<string | undefined>(undefined)
-  const { data, loading, error, refresh } = useTournaments(serverOverride)
+  const { data, loading, error, refresh } = useTournaments()
   const [showCreate, setShowCreate] = useState(false)
 
   if (loading) {
@@ -127,7 +143,7 @@ export function TournamentList() {
   if (error) {
     return (
       <div className="space-y-4">
-        <ServerConfig onServerChange={(url) => { setServerOverride(url); refresh() }} />
+        <ServerConfig onServerChange={refresh} />
         <div className="rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
           {error}
         </div>
@@ -139,7 +155,7 @@ export function TournamentList() {
 
   return (
     <div className="space-y-6">
-      <ServerConfig onServerChange={(url) => { setServerOverride(url); refresh() }} />
+      <ServerConfig onServerChange={refresh} />
 
       <div className="flex items-center justify-between">
         <span className="text-sm text-text-muted">
