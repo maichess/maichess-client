@@ -1,16 +1,27 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import type { TournamentDetail } from '@/lib/models/tournament'
 
 export function useTournament(id: string, serverUrl?: string) {
   const [data, setData] = useState<TournamentDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [fetchKey, setFetchKey] = useState(0)
+  const [lastFetchKey, setLastFetchKey] = useState(-1)
 
   const refresh = useCallback(() => {
+    setFetchKey((k) => k + 1)
+  }, [])
+
+  const stableKey = `${id}-${serverUrl ?? ''}-${fetchKey}`
+  const derivedKey = `${id}-${serverUrl ?? ''}-${lastFetchKey}`
+
+  if (stableKey !== derivedKey) {
+    setLastFetchKey(fetchKey)
     setLoading(true)
     setError(null)
+
     const params = new URLSearchParams()
     if (serverUrl) params.set('server', serverUrl)
 
@@ -22,15 +33,13 @@ export function useTournament(id: string, serverUrl?: string) {
       .then(setData)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false))
-  }, [id, serverUrl])
-
-  useEffect(() => { refresh() }, [refresh])
+  }
 
   const startTournament = useCallback(async () => {
     const res = await fetch(`/api/tournaments/${id}/start`, { method: 'POST' })
     if (!res.ok) throw new Error(`Failed to start tournament (${res.status})`)
-    refresh()
-  }, [id, refresh])
+    setFetchKey((k) => k + 1)
+  }, [id])
 
   const registerBot = useCallback(async (botId: string) => {
     const res = await fetch(`/api/tournaments/${id}/register`, {
@@ -39,14 +48,14 @@ export function useTournament(id: string, serverUrl?: string) {
       body: JSON.stringify({ bot_id: botId }),
     })
     if (!res.ok) throw new Error(`Failed to register bot (${res.status})`)
-    refresh()
-  }, [id, refresh])
+    setFetchKey((k) => k + 1)
+  }, [id])
 
   const withdrawBot = useCallback(async (botId: string) => {
     const res = await fetch(`/api/tournaments/${id}/register?bot_id=${encodeURIComponent(botId)}`, { method: 'DELETE' })
     if (!res.ok) throw new Error(`Failed to withdraw (${res.status})`)
-    refresh()
-  }, [id, refresh])
+    setFetchKey((k) => k + 1)
+  }, [id])
 
   const deleteTournament = useCallback(async () => {
     const res = await fetch(`/api/tournaments/${id}`, { method: 'DELETE' })

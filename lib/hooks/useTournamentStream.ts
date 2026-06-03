@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef } from 'react'
 
 export interface TournamentSSEEvent {
   type: string
@@ -13,10 +13,13 @@ export function useTournamentStream(
   enabled = true,
 ) {
   const onEventRef = useRef(onEvent)
-  onEventRef.current = onEvent
 
-  const connect = useCallback(() => {
-    if (!enabled) return undefined
+  useEffect(() => {
+    onEventRef.current = onEvent
+  }, [onEvent])
+
+  useEffect(() => {
+    if (!enabled) return
 
     const source = new EventSource(`/api/tournaments/${id}/stream`)
 
@@ -35,11 +38,6 @@ export function useTournamentStream(
     source.addEventListener('roundFinished', handler)
     source.addEventListener('tournamentFinished', handler)
 
-    return source
+    return () => source.close()
   }, [id, enabled])
-
-  useEffect(() => {
-    const source = connect()
-    return () => source?.close()
-  }, [connect])
 }
