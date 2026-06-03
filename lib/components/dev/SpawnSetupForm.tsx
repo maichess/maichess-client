@@ -50,6 +50,12 @@ export function SpawnSetupForm() {
     )
   }
 
+  // The white/black selects display the first/second bot by default, but their
+  // state stays empty until the user actively changes them. Resolve the same
+  // fallbacks used on submit so gating matches what the user sees selected.
+  const effectiveWhiteBotId = whiteBotId || bots[0]?.id || ''
+  const effectiveBlackBotId = blackBotId || bots[1]?.id || bots[0]?.id || ''
+
   async function handleSubmit() {
     const fenList = parseFenList()
     const tfId = timeFormatId || formats[0]?.id || ''
@@ -79,8 +85,8 @@ export function SpawnSetupForm() {
       await create({
         name: name || 'Single',
         single: {
-          white_bot_id: whiteBotId || bots[0]?.id || '',
-          black_bot_id: blackBotId || (bots[1]?.id ?? bots[0]?.id ?? ''),
+          white_bot_id: effectiveWhiteBotId,
+          black_bot_id: effectiveBlackBotId,
           fen_list: fenList,
           games_per_fen: gamesPerFen,
           keep_switching_colors: keepSwitchingColors,
@@ -93,7 +99,9 @@ export function SpawnSetupForm() {
   const needsMultiBot = tab === 'tournament' || tab === 'matrix'
   const canSubmit =
     name.trim() !== '' &&
-    (needsMultiBot ? selectedBotIds.length >= 2 : whiteBotId && blackBotId)
+    (needsMultiBot
+      ? selectedBotIds.length >= 2
+      : effectiveWhiteBotId !== '' && effectiveBlackBotId !== '')
 
   return (
     <div className="flex flex-col gap-6">
