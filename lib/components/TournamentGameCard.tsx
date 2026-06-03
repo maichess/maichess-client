@@ -8,16 +8,16 @@ interface Props {
   pairing: TournamentPairing
 }
 
-function resultBadge(winner: string | null, whiteId: string): string {
+function resultBadge(winner: string | null): string {
   if (winner === null) return 'ongoing'
   if (winner === 'draw') return '½-½'
-  return winner === whiteId ? '1-0' : '0-1'
+  return winner === 'white' ? '1-0' : '0-1'
 }
 
 export function TournamentGameCard({ pairing }: Props) {
   const matchId = pairing.match_db_id
   const href = matchId ? ROUTES.watchMatch(matchId) : undefined
-  const badge = resultBadge(pairing.winner, pairing.white.id)
+  const badge = resultBadge(pairing.winner)
 
   const content = (
     <div className="flex items-center justify-between rounded-xl border border-border bg-bg-secondary px-4 py-3 transition-all hover:border-accent/50">

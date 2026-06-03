@@ -70,8 +70,8 @@ export function TournamentRounds({ tournamentId, nbRounds, currentRound }: Props
 
       {!loading && pairings && pairings.pairings.length > 0 && (
         <ul className="space-y-2">
-          {pairings.pairings.map((p) => (
-            <li key={p.gameId}>
+          {pairings.pairings.map((p, i) => (
+            <li key={p.gameId ?? i}>
               <TournamentGameCard pairing={p} />
             </li>
           ))}

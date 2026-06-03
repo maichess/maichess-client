@@ -66,7 +66,7 @@ export interface GameMapping {
 export interface TournamentPairing {
   white: { id: string; name: string }
   black: { id: string; name: string }
-  gameId: string
+  gameId: string | null
   match_db_id?: string
   winner: string | null
 }
