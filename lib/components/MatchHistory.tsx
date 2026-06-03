@@ -13,14 +13,25 @@ export function MatchHistory() {
   const { data, loading, error, totalPages, nextPage, prevPage } = useMatchHistory()
   const router = useRouter()
   const [importing, setImporting] = useState<string | null>(null)
+  const [analyseError, setAnalyseError] = useState<string | null>(null)
 
   async function handleAnalyse(matchId: string) {
     setImporting(matchId)
+    setAnalyseError(null)
     try {
       const res = await fetch(`/api/games/from-match/${matchId}`, { method: 'POST' })
-      if (!res.ok) return
+      if (!res.ok) {
+        setAnalyseError(
+          res.status === 403
+            ? "You can only analyse games you played in or started."
+            : "Couldn't open this game for analysis. Please try again.",
+        )
+        return
+      }
       const game: { id: string } = await res.json()
       router.push(ROUTES.analysisGame(game.id))
+    } catch {
+      setAnalyseError('Network error. Please try again.')
     } finally {
       setImporting(null)
     }
@@ -52,6 +63,11 @@ export function MatchHistory() {
 
   return (
     <>
+      {analyseError && (
+        <div className="mb-3 rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
+          {analyseError}
+        </div>
+      )}
       <div className="space-y-2">
         {data.matches.map((m) => (
           <MatchHistoryRow
