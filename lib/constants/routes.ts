@@ -16,4 +16,5 @@ export const ROUTES = {
   arenaNew: '/dev/arena/new',
   arenaList: '/dev/arena',
   arenaCollection: (id: string) => `/dev/arena/${id}`,
+  searchDev: '/dev/search',
 } as const

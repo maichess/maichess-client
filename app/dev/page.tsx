@@ -37,6 +37,18 @@ export default async function DevPage() {
             Browse finished and running arena collections.
           </p>
         </Link>
+
+        <Link
+          href={ROUTES.searchDev}
+          className="rounded-2xl border border-border bg-bg-secondary p-6 hover:border-accent/50 hover:bg-bg-elevated transition-all group"
+        >
+          <h2 className="text-lg font-semibold text-text-primary group-hover:text-accent transition-colors">
+            Search
+          </h2>
+          <p className="mt-1 text-sm text-text-muted">
+            Faceted game / match search and FEN position lookup.
+          </p>
+        </Link>
       </div>
 
       <div className="mt-8 rounded-2xl border border-border bg-bg-secondary p-6">
