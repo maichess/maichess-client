@@ -16,6 +16,10 @@ export async function POST(
     }
   )
 
-  const data = await res.json()
-  return Response.json(data, { status: res.status })
+  // Resign returns 202 Accepted with no body; the match end arrives over the socket.
+  const text = await res.text()
+  return new Response(text || null, {
+    status: res.status,
+    headers: text ? { 'Content-Type': res.headers.get('content-type') ?? 'application/json' } : undefined,
+  })
 }

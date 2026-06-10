@@ -73,19 +73,15 @@ export function useMatch(initialMatch: Match) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ move: uci }),
       })
-      if (res.status === 400) {
-        const data = await res.json()
-        setMoveError(data.error ?? 'Illegal move.')
-        setOptimisticFen(null)
-        return false
-      }
       if (!res.ok) {
+        // 4xx (not your turn / not a participant / match ended). The move is
+        // validated asynchronously, so an illegal move returns 202 and is rejected
+        // over the socket instead.
         setOptimisticFen(null)
         return false
       }
-      const updated: Match = await res.json()
-      setOptimisticFen(null)
-      setMatch((prev) => updated.moves.length > prev.moves.length ? updated : prev)
+      // 202 Accepted: keep the optimistic board; the authoritative move_made socket
+      // event (applyMoveEvent) clears the optimistic FEN and commits the move.
       return true
     } finally {
       setSubmitting(false)
@@ -93,13 +89,8 @@ export function useMatch(initialMatch: Match) {
   }
 
   async function resign() {
-    const res = await fetch(`/api/matches/${match.id}/resign`, {
-      method: 'POST',
-    })
-    if (res.ok) {
-      const updated: Match = await res.json()
-      setMatch(updated)
-    }
+    // 202 Accepted; the match_ended socket event (applyMatchEnded) commits the result.
+    await fetch(`/api/matches/${match.id}/resign`, { method: 'POST' })
   }
 
   async function offerDraw(): Promise<boolean> {
@@ -112,10 +103,10 @@ export function useMatch(initialMatch: Match) {
   }
 
   async function acceptDraw(): Promise<boolean> {
+    // 202 Accepted; the match_ended socket event (applyMatchEnded, reason
+    // draw_agreement) commits the drawn result.
     const res = await fetch(`/api/matches/${match.id}/draw-offer/accept`, { method: 'POST' })
     if (res.ok) {
-      const updated: Match = await res.json()
-      setMatch(updated)
       setPendingDraw(null)
       return true
     }

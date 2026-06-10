@@ -19,6 +19,12 @@ export async function POST(
     body: JSON.stringify(body),
   })
 
-  const data = await res.json()
-  return Response.json(data, { status: res.status })
+  // The move command returns 202 Accepted with no body; the authoritative result
+  // arrives over the socket. Forward the status and any (error) body without
+  // assuming JSON is present.
+  const text = await res.text()
+  return new Response(text || null, {
+    status: res.status,
+    headers: { 'Content-Type': res.headers.get('content-type') ?? 'application/json' },
+  })
 }
