@@ -117,7 +117,7 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
     const next = applyMove(match.current_fen, uci)
     clearPremove()
     if (next) {
-      void makeMove(uci)
+      void makeMove(uci, true)
     }
   }, [isMyTurn, premove, submitting, match.current_fen, makeMove, clearPremove])
 

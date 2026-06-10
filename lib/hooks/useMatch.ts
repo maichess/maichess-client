@@ -60,7 +60,9 @@ export function useMatch(initialMatch: Match) {
     setPendingDraw(null)
   }
 
-  async function makeMove(uci: string): Promise<boolean> {
+  // `premove` flags a move committed before the opponent moved (near-zero think
+  // time); it rides through to anti-cheat so the ply is exempt from timing analysis.
+  async function makeMove(uci: string, premove = false): Promise<boolean> {
     setSubmitting(true)
     setMoveError(null)
 
@@ -71,7 +73,7 @@ export function useMatch(initialMatch: Match) {
       const res = await fetch(`/api/matches/${match.id}/moves`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ move: uci }),
+        body: JSON.stringify({ move: uci, premove }),
       })
       if (!res.ok) {
         // 4xx (not your turn / not a participant / match ended). The move is

@@ -49,6 +49,18 @@ export default async function DevPage() {
             Faceted game / match search and FEN position lookup.
           </p>
         </Link>
+
+        <Link
+          href={ROUTES.anticheatDev}
+          className="rounded-2xl border border-border bg-bg-secondary p-6 hover:border-accent/50 hover:bg-bg-elevated transition-all group"
+        >
+          <h2 className="text-lg font-semibold text-text-primary group-hover:text-accent transition-colors">
+            Anti-cheat
+          </h2>
+          <p className="mt-1 text-sm text-text-muted">
+            Review flagged players and their evidence; clear false positives.
+          </p>
+        </Link>
       </div>
 
       <div className="mt-8 rounded-2xl border border-border bg-bg-secondary p-6">

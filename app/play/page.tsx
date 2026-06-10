@@ -32,6 +32,7 @@ function PlayForm() {
   const [selectedBot, setSelectedBot] = useState('')
   const [whiteBot, setWhiteBot] = useState('')
   const [blackBot, setBlackBot] = useState('')
+  const [allowFlagged, setAllowFlagged] = useState(false)
   const [botVsBotError, setBotVsBotError] = useState<string | null>(null)
   const [botVsBotSubmitting, setBotVsBotSubmitting] = useState(false)
 
@@ -83,7 +84,7 @@ function PlayForm() {
     const request: QueueRequest =
       opponentType === 'bot'
         ? { time_format_id: timeFormatId, opponent: { type: 'bot', bot_id: selectedBot } }
-        : { time_format_id: timeFormatId, opponent: { type: 'human' } }
+        : { time_format_id: timeFormatId, opponent: { type: 'human' }, allow_flagged: allowFlagged }
     await joinQueue(request)
   }
 
@@ -213,6 +214,26 @@ function PlayForm() {
               </div>
             )}
           </fieldset>
+
+          {/* Anti-cheat matchmaking filter — human opponents only */}
+          {opponentType === 'human' && (
+            <label className="mb-8 flex items-start gap-3 rounded-xl border border-border bg-bg-secondary px-4 py-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={allowFlagged}
+                onChange={(e) => setAllowFlagged(e.target.checked)}
+                className="mt-0.5 h-4 w-4 accent-accent cursor-pointer"
+              />
+              <span>
+                <span className="block text-sm font-medium text-text-primary">
+                  Allow flagged players
+                </span>
+                <span className="block text-xs text-text-muted">
+                  Off by default — you won&apos;t be matched with players flagged by anti-cheat.
+                </span>
+              </span>
+            </label>
+          )}
 
           {(error || botVsBotError) && (
             <p className="mb-4 rounded-lg bg-danger/10 border border-danger/20 px-3 py-2 text-sm text-danger">

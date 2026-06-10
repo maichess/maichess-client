@@ -17,4 +17,5 @@ export const ROUTES = {
   arenaList: '/dev/arena',
   arenaCollection: (id: string) => `/dev/arena/${id}`,
   searchDev: '/dev/search',
+  anticheatDev: '/dev/anticheat',
 } as const
