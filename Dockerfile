@@ -15,8 +15,10 @@ COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
-ARG NEXT_PUBLIC_SOCKET_URL
-ENV NEXT_PUBLIC_SOCKET_URL=$NEXT_PUBLIC_SOCKET_URL
+# Do NOT bake NEXT_PUBLIC_SOCKET_URL into the image: Next inlines it at build time,
+# which would pin every environment to a single socket host. The client derives the
+# socket URL from its own origin at runtime (lib/hooks/useSocket.ts), so one image
+# works in staging and prod alike. The env var remains a local-dev override only.
 
 RUN npm run build
 
