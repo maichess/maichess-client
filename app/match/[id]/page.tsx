@@ -1,9 +1,14 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { MatchClient } from '@/lib/components/MatchClient'
+import { MatchBootstrap } from '@/lib/components/MatchBootstrap'
 import type { Match } from '@/lib/models/match'
 import { ROUTES } from '@/lib/constants/routes'
+import { getViewerUserId } from '@/lib/utils/viewer'
 
+// A single SSR read: if the match is already materialised the board renders
+// immediately. Match creation is asynchronous, so a brand-new match may not exist
+// yet — rather than redirecting the player away, we hand off to MatchBootstrap,
+// which polls until it appears (optimistic UI + socket/poll confirmation).
 async function getMatch(id: string, token: string): Promise<Match | null> {
   const res = await fetch(`${process.env.MATCH_MANAGER_URL}/matches/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -11,15 +16,6 @@ async function getMatch(id: string, token: string): Promise<Match | null> {
   })
   if (!res.ok) return null
   return res.json()
-}
-
-function getViewerUserId(token: string): string | null {
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
-    return payload.sub ?? payload.user_id ?? null
-  } catch {
-    return null
-  }
 }
 
 export default async function MatchPage({
@@ -34,9 +30,7 @@ export default async function MatchPage({
   if (!token) redirect(ROUTES.login)
 
   const match = await getMatch(id, token)
-  if (!match) redirect(ROUTES.dashboard)
-
   const viewerUserId = getViewerUserId(token)
 
-  return <MatchClient initialMatch={match} viewerUserId={viewerUserId} />
+  return <MatchBootstrap id={id} initialMatch={match} viewerUserId={viewerUserId} />
 }

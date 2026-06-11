@@ -2,8 +2,11 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import { Swords, Bot, Tv, BarChart2 } from 'lucide-react'
+import { Swords, Bot, Tv, BarChart2, Play } from 'lucide-react'
 import type { User } from '@/lib/models/user'
+import type { MatchListResponse, MatchSummary } from '@/lib/models/match'
+import { playerDisplayName } from '@/lib/models/match'
+import { formatTimeFormatLabel } from '@/lib/utils/time'
 import { ROUTES } from '@/lib/constants/routes'
 
 async function getUser(cookieHeader: string): Promise<User | null> {
@@ -13,6 +16,17 @@ async function getUser(cookieHeader: string): Promise<User | null> {
   })
   if (!res.ok) return null
   return res.json()
+}
+
+async function getOngoingMatches(userId: string, cookieHeader: string): Promise<MatchSummary[]> {
+  const params = new URLSearchParams({ status: 'ongoing', page: '1', page_size: '10' })
+  const res = await fetch(
+    `${process.env.MATCH_MANAGER_URL}/users/${userId}/matches?${params.toString()}`,
+    { headers: { Cookie: cookieHeader }, cache: 'no-store' },
+  )
+  if (!res.ok) return []
+  const data = (await res.json()) as MatchListResponse
+  return data.matches ?? []
 }
 
 export default async function DashboardPage() {
@@ -28,6 +42,8 @@ export default async function DashboardPage() {
     if (hasToken) redirect('/api/auth/logout')
     redirect(ROUTES.login)
   }
+
+  const ongoingMatches = await getOngoingMatches(user.id, cookieHeader)
 
   const total = user.wins + user.losses + user.draws
   const winRate = total > 0 ? Math.round((user.wins / total) * 100) : 0
@@ -49,6 +65,37 @@ export default async function DashboardPage() {
         <StatCard label="Losses" value={user.losses} />
         <StatCard label="Win rate" value={`${winRate}%`} />
       </div>
+
+      {/* Continue playing — resume games still in progress */}
+      {ongoingMatches.length > 0 && (
+        <div className="mb-8">
+          <h2 className="mb-3 text-lg font-semibold text-text-primary">Continue playing</h2>
+          <ul className="space-y-2">
+            {ongoingMatches.map((m) => (
+              <li key={m.id}>
+                <Link
+                  href={ROUTES.match(m.id)}
+                  className="flex items-center justify-between rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 transition-all hover:border-accent/60"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium text-text-primary">
+                      {playerDisplayName(m.white)}
+                      <span className="mx-2 text-text-muted">vs</span>
+                      {playerDisplayName(m.black)}
+                    </div>
+                    <div className="mt-0.5 text-xs text-text-muted">
+                      {formatTimeFormatLabel(m.time_format)} · {m.move_count} move{m.move_count === 1 ? '' : 's'}
+                    </div>
+                  </div>
+                  <span className="ml-3 flex items-center gap-1 text-xs font-medium text-accent">
+                    <Play size={13} /> Resume
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Play section */}
       <div className="rounded-2xl border border-border bg-bg-secondary p-6">

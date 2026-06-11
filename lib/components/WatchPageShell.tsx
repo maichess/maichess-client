@@ -14,9 +14,18 @@ interface Props {
   page: number
   hasMore: boolean
   validCategory: TimeFormatCategory | undefined
+  viewerUserId: string | null
 }
 
 type View = 'list' | 'globe'
+
+function isViewerParticipant(m: MatchSummary, viewerUserId: string | null): boolean {
+  if (!viewerUserId) return false
+  return (
+    (isUserPlayer(m.white) && m.white.user_id === viewerUserId) ||
+    (isUserPlayer(m.black) && m.black.user_id === viewerUserId)
+  )
+}
 
 function pageQuery(page: number, category: TimeFormatCategory | undefined): string {
   const params = new URLSearchParams({ page: String(page) })
@@ -40,7 +49,7 @@ function CategoryFilter({ active, href, label }: { active: boolean; href: string
   )
 }
 
-export function WatchPageShell({ matches, total, page, hasMore, validCategory }: Props) {
+export function WatchPageShell({ matches, total, page, hasMore, validCategory, viewerUserId }: Props) {
   const [view, setView] = useState<View>('list')
 
   return (
@@ -103,10 +112,12 @@ export function WatchPageShell({ matches, total, page, hasMore, validCategory }:
             </p>
           ) : (
             <ul className="space-y-2">
-              {matches.map((m) => (
+              {matches.map((m) => {
+                const canResume = isViewerParticipant(m, viewerUserId)
+                return (
                 <li key={m.id}>
                   <Link
-                    href={ROUTES.watchMatch(m.id)}
+                    href={canResume ? ROUTES.match(m.id) : ROUTES.watchMatch(m.id)}
                     className="flex items-center justify-between rounded-xl border border-border bg-bg-secondary px-4 py-3 transition-all hover:border-accent/50"
                   >
                     <div className="min-w-0 flex-1">
@@ -130,10 +141,13 @@ export function WatchPageShell({ matches, total, page, hasMore, validCategory }:
                         )}
                       </div>
                     </div>
-                    <span className="ml-3 text-xs text-accent">Watch →</span>
+                    <span className="ml-3 text-xs font-medium text-accent">
+                      {canResume ? 'Resume →' : 'Watch →'}
+                    </span>
                   </Link>
                 </li>
-              ))}
+                )
+              })}
             </ul>
           )}
 

@@ -13,6 +13,11 @@ export async function GET(
     cache: 'no-store',
   })
 
+  // A not-yet-materialised match (404) has an empty body; don't try to parse it.
+  // Propagate the status faithfully so the client can tell "still being created"
+  // (404, keep polling) apart from a real failure.
+  if (!res.ok) return new Response(null, { status: res.status })
+
   const data = await res.json()
-  return Response.json(data, { status: res.status })
+  return Response.json(data, { status: 200 })
 }

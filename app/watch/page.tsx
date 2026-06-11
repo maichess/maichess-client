@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { ROUTES } from '@/lib/constants/routes'
 import type { MatchListResponse, MatchSummary, TimeFormatCategory } from '@/lib/models/match'
 import { WatchPageShell } from '@/lib/components/WatchPageShell'
+import { getViewerUserId } from '@/lib/utils/viewer'
 
 type Props = {
   searchParams: Promise<{ page?: string; category?: string }>
@@ -30,7 +31,9 @@ async function listOngoingMatches(
 
 export default async function WatchPage({ searchParams }: Props) {
   const cookieStore = await cookies()
-  if (!cookieStore.has('access_token')) redirect(ROUTES.login)
+  const token = cookieStore.get('access_token')?.value
+  if (!token) redirect(ROUTES.login)
+  const viewerUserId = getViewerUserId(token)
 
   const { page: pageParam, category } = await searchParams
   const page = Math.max(1, Number.parseInt(pageParam ?? '1', 10) || 1)
@@ -53,6 +56,7 @@ export default async function WatchPage({ searchParams }: Props) {
       page={page}
       hasMore={hasMore}
       validCategory={validCategory}
+      viewerUserId={viewerUserId}
     />
   )
 }
