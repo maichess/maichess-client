@@ -1,4 +1,4 @@
-import { requireDevUser } from '@/lib/utils/serverUser'
+import { requireUser } from '@/lib/utils/serverUser'
 import { ArenaCollectionDetail } from '@/lib/components/dev/ArenaCollectionDetail'
 
 export default async function ArenaCollectionPage({
@@ -6,7 +6,7 @@ export default async function ArenaCollectionPage({
 }: {
   params: Promise<{ id: string }>
 }) {
-  await requireDevUser()
+  await requireUser()
   const { id } = await params
 
   return (

@@ -1,8 +1,8 @@
-import { requireDevUser } from '@/lib/utils/serverUser'
+import { requireUser } from '@/lib/utils/serverUser'
 import { AllGamesPanel } from '@/lib/components/dev/AllGamesPanel'
 
 export default async function AllGamesPage() {
-  await requireDevUser()
+  await requireUser()
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-10">

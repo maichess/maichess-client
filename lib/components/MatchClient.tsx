@@ -15,6 +15,7 @@ import { ChessBoard } from './ChessBoard'
 import { PlayerCard } from './PlayerCard'
 import { MoveList } from './MoveList'
 import { GameStatus } from './GameStatus'
+import { AnalyseGameButton } from './AnalyseGameButton'
 import { PromotionPicker } from './PromotionPicker'
 import { Button } from './ui/Button'
 
@@ -342,10 +343,13 @@ export function MatchClient({ initialMatch, viewerUserId }: MatchClientProps) {
 
       <div className="flex flex-col gap-3 w-full lg:w-64 xl:w-72">
         {isGameOver ? (
-          <GameStatus
-            status={match.status}
-            myColor={viewerUserId ? myColor : null}
-          />
+          <>
+            <GameStatus
+              status={match.status}
+              myColor={viewerUserId ? myColor : null}
+            />
+            <AnalyseGameButton matchId={match.id} />
+          </>
         ) : viewerUserId && (
           <div className="flex flex-col gap-2">
             {pendingDraw?.from === 'opponent' && (

@@ -22,6 +22,16 @@ export async function getServerUser(): Promise<User | null> {
 }
 
 /**
+ * Server-side guard for authenticated-only pages. Redirects unauthenticated users
+ * to login. Returns the user otherwise.
+ */
+export async function requireUser(): Promise<User> {
+  const user = await getServerUser()
+  if (!user) redirect(ROUTES.login)
+  return user
+}
+
+/**
  * Server-side guard for the Dev area. Redirects unauthenticated users to login
  * and authenticated non-dev users to the dashboard. Returns the user otherwise.
  */

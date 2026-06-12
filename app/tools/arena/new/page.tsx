@@ -1,8 +1,8 @@
-import { requireDevUser } from '@/lib/utils/serverUser'
+import { requireUser } from '@/lib/utils/serverUser'
 import { SpawnSetupForm } from '@/lib/components/dev/SpawnSetupForm'
 
 export default async function ArenaNewPage() {
-  await requireDevUser()
+  await requireUser()
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-10">

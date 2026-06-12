@@ -60,7 +60,7 @@ function CollectionRow({ collection: c }: { collection: CollectionSummary }) {
           <span className="rounded-full border border-border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-text-muted shrink-0">
             {c.type}
           </span>
-          <StatusBadge status={c.status} />
+          <StatusBadge status={c.status} runningGames={c.progress.running_games} />
         </div>
         <div className="mt-0.5 text-xs text-text-muted">
           {date} · {c.progress.finished_games}/{c.progress.total_games} games
@@ -72,7 +72,7 @@ function CollectionRow({ collection: c }: { collection: CollectionSummary }) {
   )
 }
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, runningGames }: { status: string; runningGames: number }) {
   if (status === 'finished') {
     return (
       <span className="rounded-full bg-green-500/15 text-green-500 text-[10px] font-semibold px-2 py-0.5 shrink-0">
@@ -80,10 +80,13 @@ function StatusBadge({ status }: { status: string }) {
       </span>
     )
   }
-  if (status === 'running') {
+  // "live" only when a game is actually in flight; a collection that is nominally
+  // running but has nothing spawned yet (queued behind the concurrency limit) is
+  // still pending from the user's perspective.
+  if (status === 'running' && runningGames > 0) {
     return (
-      <span className="rounded-full bg-amber-500/15 text-amber-400 text-[10px] font-semibold px-2 py-0.5 shrink-0">
-        running
+      <span className="rounded-full bg-green-500/15 text-green-500 text-[10px] font-semibold px-2 py-0.5 shrink-0">
+        live
       </span>
     )
   }

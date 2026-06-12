@@ -1,8 +1,8 @@
-import { requireDevUser } from '@/lib/utils/serverUser'
+import { requireUser } from '@/lib/utils/serverUser'
 import { SearchPanel } from '@/lib/components/dev/SearchPanel'
 
 export default async function SearchPage() {
-  await requireDevUser()
+  await requireUser()
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-10">

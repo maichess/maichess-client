@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 import { Swords, Bot, Tv, BarChart2, Play } from 'lucide-react'
 import type { User } from '@/lib/models/user'
 import type { MatchListResponse, MatchSummary } from '@/lib/models/match'
-import { playerDisplayName } from '@/lib/models/match'
+import { playerDisplayName, isUserPlayer } from '@/lib/models/match'
 import { formatTimeFormatLabel } from '@/lib/utils/time'
 import { ROUTES } from '@/lib/constants/routes'
 
@@ -26,7 +26,14 @@ async function getOngoingMatches(userId: string, cookieHeader: string): Promise<
   )
   if (!res.ok) return []
   const data = (await res.json()) as MatchListResponse
-  return data.matches ?? []
+  // "Continue playing" should only surface games the user is actually playing,
+  // not ones they merely initiated (e.g. spawned bot-vs-bot arena games where the
+  // user is the creator but not a participant).
+  return (data.matches ?? []).filter(
+    (m) =>
+      (isUserPlayer(m.white) && m.white.user_id === userId) ||
+      (isUserPlayer(m.black) && m.black.user_id === userId),
+  )
 }
 
 export default async function DashboardPage() {

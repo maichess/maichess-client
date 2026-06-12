@@ -50,7 +50,10 @@ export function ArenaCollectionDetail({ id }: { id: string }) {
         <div className="mt-1 flex items-center gap-2 text-sm text-text-muted">
           <span className="uppercase text-xs font-medium">{collection.type}</span>
           <span>·</span>
-          <CollectionStatusLabel status={collection.status} />
+          <CollectionStatusLabel
+            status={collection.status}
+            runningGames={collection.progress.running_games}
+          />
           <span>·</span>
           <span>
             {collection.progress.finished_games}/{collection.progress.total_games} games
@@ -88,9 +91,13 @@ export function ArenaCollectionDetail({ id }: { id: string }) {
   )
 }
 
-function CollectionStatusLabel({ status }: { status: string }) {
+function CollectionStatusLabel({ status, runningGames }: { status: string; runningGames: number }) {
   if (status === 'finished') return <span className="text-green-500 font-medium">Finished</span>
-  if (status === 'running') return <span className="text-amber-400 font-medium">Running</span>
+  // Only "Live" once a game is actually in flight; otherwise the collection is
+  // still pending (e.g. queued behind the global concurrency limit).
+  if (status === 'running' && runningGames > 0) {
+    return <span className="text-green-500 font-medium">Live</span>
+  }
   return <span className="text-text-muted font-medium">Pending</span>
 }
 

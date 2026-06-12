@@ -12,6 +12,7 @@ import { ChessBoard } from './ChessBoard'
 import { PlayerCard } from './PlayerCard'
 import { MoveList } from './MoveList'
 import { GameStatus } from './GameStatus'
+import { AnalyseGameButton } from './AnalyseGameButton'
 import { ExportGamePanel } from './ExportGamePanel'
 import { Button } from './ui/Button'
 import { matchToPgn } from '@/lib/utils/pgn'
@@ -162,7 +163,12 @@ export function WatchClient({ initialMatch }: WatchClientProps) {
       </div>
 
       <div className="flex flex-col gap-3 w-full lg:w-64 xl:w-72">
-        {isGameOver && <GameStatus status={match.status} myColor={null} />}
+        {isGameOver && (
+          <>
+            <GameStatus status={match.status} myColor={null} />
+            <AnalyseGameButton matchId={match.id} />
+          </>
+        )}
 
         <ExportGamePanel pgn={matchToPgn(match)} fen={match.current_fen} />
 

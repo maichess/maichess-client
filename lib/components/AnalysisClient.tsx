@@ -13,6 +13,7 @@ import { ChessBoard } from './ChessBoard'
 import { AnalysisPanel } from './analysis/AnalysisPanel'
 import { AnalysisMoveList } from './analysis/AnalysisMoveList'
 import { AdvancedSettings } from './analysis/AdvancedSettings'
+import { ExportGamePanel } from './ExportGamePanel'
 import { Button } from './ui/Button'
 
 interface AnalysisClientProps {
@@ -180,6 +181,9 @@ export function AnalysisClient({ game, config }: AnalysisClientProps) {
           error={state.analysisError}
           currentFen={state.currentFen}
         />
+
+        {/* Copy PGN (full game) / FEN (current position) */}
+        <ExportGamePanel pgn={game.pgn} fen={state.currentFen} />
 
         {/* Advanced settings */}
         <AdvancedSettings

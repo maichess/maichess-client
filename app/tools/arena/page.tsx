@@ -1,8 +1,8 @@
-import { requireDevUser } from '@/lib/utils/serverUser'
+import { requireUser } from '@/lib/utils/serverUser'
 import { ArenaCollectionList } from '@/lib/components/dev/ArenaCollectionList'
 
 export default async function ArenaListPage() {
-  await requireDevUser()
+  await requireUser()
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-10">

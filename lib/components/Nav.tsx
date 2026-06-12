@@ -45,10 +45,10 @@ export async function Nav() {
           </Link>
           {user && (
             <Link
-              href={ROUTES.profile}
+              href={ROUTES.tools}
               className="rounded-lg px-3 py-1.5 text-sm text-text-secondary hover:bg-bg-elevated hover:text-text-primary transition-colors"
             >
-              Profile
+              Tools
             </Link>
           )}
           {user?.dev_mode && (
@@ -63,14 +63,20 @@ export async function Nav() {
 
         <div className="flex items-center gap-3">
           {user && (
-            <span className="hidden sm:flex items-center gap-1.5 text-sm text-text-muted">
+            <Link
+              href={ROUTES.profile}
+              aria-label="Your profile"
+              className="flex items-center gap-1.5 rounded-lg px-1.5 py-1 text-sm text-text-muted hover:bg-bg-elevated transition-colors"
+            >
               <span className="size-6 flex items-center justify-center rounded-full bg-accent/20 text-accent text-xs font-semibold">
                 {user.username[0].toUpperCase()}
               </span>
-              <span className="text-text-secondary">{user.username}</span>
-              <span className="text-xs text-text-muted">·</span>
-              <span className="text-xs text-text-muted">{user.elo}</span>
-            </span>
+              <span className="hidden sm:inline text-text-secondary hover:text-text-primary transition-colors">
+                {user.username}
+              </span>
+              <span className="hidden sm:inline text-xs text-text-muted">·</span>
+              <span className="hidden sm:inline text-xs text-text-muted">{user.elo}</span>
+            </Link>
           )}
           <ThemeSelector />
         </div>
