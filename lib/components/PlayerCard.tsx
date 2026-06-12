@@ -33,15 +33,16 @@ export function PlayerCard({
   const [displayTime, setDisplayTime] = useState(timeMs)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const lastTickRef = useRef<number>(0)
-  const isActiveRef = useRef(isActive)
-  isActiveRef.current = isActive
 
   useEffect(() => {
-    const alreadyElapsed = isActiveRef.current ? Math.max(0, Date.now() - lastMoveAtMs) : 0
+    const alreadyElapsed = isActive ? Math.max(0, Date.now() - lastMoveAtMs) : 0
+    // Resetting the displayed clock to the authoritative server time when the server
+    // props change is a deliberate sync to external state (the server clock), which the
+    // local tick interval below then counts down — not an avoidable cascading render.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setDisplayTime(Math.max(0, timeMs - alreadyElapsed))
     lastTickRef.current = Date.now()
-  }, [timeMs, lastMoveAtMs])
+  }, [timeMs, lastMoveAtMs, isActive])
 
   useEffect(() => {
     if (!isActive) {

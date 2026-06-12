@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ThemeSelector } from './ThemeSelector'
+import { ToolsMenu } from './ToolsMenu'
 import { PawnIcon } from './icons/PawnIcon'
 import { ROUTES } from '@/lib/constants/routes'
 import { getServerUser } from '@/lib/utils/serverUser'
@@ -43,14 +44,7 @@ export async function Nav() {
           >
             Analyse
           </Link>
-          {user && (
-            <Link
-              href={ROUTES.tools}
-              className="rounded-lg px-3 py-1.5 text-sm text-text-secondary hover:bg-bg-elevated hover:text-text-primary transition-colors"
-            >
-              Tools
-            </Link>
-          )}
+          {user && <ToolsMenu />}
           {user?.dev_mode && (
             <Link
               href={ROUTES.dev}

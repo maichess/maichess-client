@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { getLegalMovesFromSquare } from '@/lib/utils/fen'
 
 export function useAnalysisBoardInput(
@@ -9,10 +9,14 @@ export function useAnalysisBoardInput(
 ) {
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null)
 
-  // Clear selection whenever the board position changes (navigation/whatif)
-  useEffect(() => {
+  // Clear selection whenever the board position changes (navigation/whatif).
+  // Adjusting state during render on a prop change is React's recommended pattern
+  // over a setState-in-effect, which triggers an extra cascading render.
+  const [prevFen, setPrevFen] = useState(currentFen)
+  if (currentFen !== prevFen) {
+    setPrevFen(currentFen)
     setSelectedSquare(null)
-  }, [currentFen])
+  }
 
   const legalMoves = useMemo(
     () => (selectedSquare ? getLegalMovesFromSquare(currentFen, selectedSquare) : []),
