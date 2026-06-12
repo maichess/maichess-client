@@ -19,5 +19,6 @@ export const ROUTES = {
   arenaCollection: (id: string) => `/tools/arena/${id}`,
   searchDev: '/tools/search',
   gamesDev: '/tools/games',
+  lichessPlay: '/tools/lichess',
   anticheatDev: '/dev/anticheat',
 } as const

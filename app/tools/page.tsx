@@ -60,6 +60,19 @@ export default async function ToolsPage() {
             Faceted game / match search and FEN position lookup.
           </p>
         </Link>
+
+        <Link
+          href={ROUTES.lichessPlay}
+          className="rounded-2xl border border-border bg-bg-secondary p-6 hover:border-accent/50 hover:bg-bg-elevated transition-all group"
+        >
+          <h2 className="text-lg font-semibold text-text-primary group-hover:text-accent transition-colors">
+            Play on Lichess
+          </h2>
+          <p className="mt-1 text-sm text-text-muted">
+            Send a maichess bot to play a Lichess game (AI, user, or existing game), mirrored as an
+            external match.
+          </p>
+        </Link>
       </div>
     </div>
   )
