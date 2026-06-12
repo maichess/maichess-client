@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers'
 
-export async function POST(req: Request) {
+export async function POST() {
   const cookieStore = await cookies()
 
   const res = await fetch(`${process.env.AUTH_SERVICE_URL}/auth/logout`, {

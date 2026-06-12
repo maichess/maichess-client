@@ -123,9 +123,12 @@ export function useAnalysisSession(game: AnalysisGameDetail, config: AnalysisCon
   const botIdRef = useRef(config.default_bot_id)
   const lineCountRef = useRef(config.default_line_count)
 
-  // Keep refs in sync with state for use in callbacks
-  botIdRef.current = state.botId
-  lineCountRef.current = state.lineCount
+  // Keep refs in sync with state so a re-init (new game) reads the latest settings.
+  // Synced in an effect rather than during render (writing a ref during render is unsafe).
+  useEffect(() => {
+    botIdRef.current = state.botId
+    lineCountRef.current = state.lineCount
+  })
 
   const onUpdate = useCallback((depth: number, lines: AnalysisLine[]) => {
     dispatch({ type: 'ANALYSIS_UPDATE', depth, lines })
@@ -170,7 +173,7 @@ export function useAnalysisSession(game: AnalysisGameDetail, config: AnalysisCon
         sessionIdRef.current = null
       }
     }
-  }, [game.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [game.id])
 
   const navigate = useCallback(async (index: number) => {
     const sid = sessionIdRef.current

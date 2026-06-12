@@ -9,10 +9,22 @@ import type {
   SearchScope,
 } from '@/lib/models/search'
 
-const TABS: { scope: SearchScope; label: string }[] = [
-  { scope: 'games', label: 'Games' },
-  { scope: 'matches', label: 'Matches' },
-  { scope: 'positions', label: 'Positions' },
+const TABS: { scope: SearchScope; label: string; help: string }[] = [
+  {
+    scope: 'games',
+    label: 'Games',
+    help: 'Your analysis games library — games you imported or saved for analysis (imported PGNs, FEN imports, and matches you imported). Searchable by username, bot name, opening, or tag (partial matches work).',
+  },
+  {
+    scope: 'matches',
+    label: 'Matches',
+    help: 'Your Past Matches — games you actually played on maichess (as white, black, or the creator of a bot-vs-bot game). Free text matches player/bot ids; display names are resolved separately.',
+  },
+  {
+    scope: 'positions',
+    label: 'Positions',
+    help: 'Find your games and matches that reached a given board position. Paste a FEN; only the piece placement and side-to-move are matched.',
+  },
 ]
 
 type AnyResult = GameSearchResult | MatchSearchResult | PositionSearchResult
@@ -33,7 +45,7 @@ export function SearchPanel() {
       scope === 'games'
         ? { q, opponent }
         : scope === 'matches'
-          ? { opponent, result }
+          ? { q, opponent, result }
           : { fen }
 
     const page = await search<AnyResult>(scope, params)
@@ -68,6 +80,8 @@ export function SearchPanel() {
         ))}
       </div>
 
+      <p className="mb-4 text-xs text-text-muted">{TABS.find((t) => t.scope === scope)?.help}</p>
+
       <form onSubmit={run} className="flex flex-wrap items-end gap-3">
         {scope === 'games' && (
           <>
@@ -77,7 +91,8 @@ export function SearchPanel() {
         )}
         {scope === 'matches' && (
           <>
-            <Field label="Opponent" value={opponent} onChange={setOpponent} placeholder="name" />
+            <Field label="Free text" value={q} onChange={setQ} placeholder="player or bot id…" />
+            <Field label="Opponent" value={opponent} onChange={setOpponent} placeholder="id" />
             <label className="flex flex-col gap-1 text-xs text-text-muted">
               Result
               <select
