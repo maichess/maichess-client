@@ -33,9 +33,10 @@ export function useUserMatches(initial?: UserMatchesResponse) {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/analysis/matches?page=${page}&page_size=${data.page_size}`, {
-        cache: 'no-store',
-      })
+      const res = await fetch(
+        `/api/analysis/matches?status=all&page=${page}&page_size=${data.page_size}`,
+        { cache: 'no-store' },
+      )
       if (!res.ok) {
         setError('Failed to load matches.')
         return

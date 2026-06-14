@@ -52,7 +52,7 @@ export function UserMatchList() {
   if (data.matches.length === 0) {
     return (
       <div className="rounded-2xl border border-border bg-bg-secondary p-12 text-center">
-        <p className="text-text-muted">No finished matches yet. Play a game to fill this list.</p>
+        <p className="text-text-muted">No matches yet. Play a game to fill this list.</p>
       </div>
     )
   }
@@ -104,9 +104,13 @@ function MatchRow({
 }) {
   const whiteName = playerLabel(match.white)
   const blackName = playerLabel(match.black)
+  const ongoing = match.status === 'ongoing'
   const date = match.finished_at_ms > 0
     ? new Date(match.finished_at_ms).toLocaleDateString()
     : ''
+  const meta = [date, `${match.move_count} moves`, formatTimeFormatLabel(match.time_format)]
+    .filter(Boolean)
+    .join(' · ')
 
   return (
     <div className="flex items-center gap-4 rounded-xl border border-border bg-bg-secondary px-4 py-3">
@@ -115,11 +119,15 @@ function MatchRow({
           <span className="font-semibold text-text-primary truncate">
             {whiteName} vs {blackName}
           </span>
-          <span className="text-xs text-text-muted shrink-0">{resultLabel(match.status)}</span>
+          {ongoing ? (
+            <span className="shrink-0 rounded-full bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent">
+              In progress
+            </span>
+          ) : (
+            <span className="text-xs text-text-muted shrink-0">{resultLabel(match.status)}</span>
+          )}
         </div>
-        <div className="mt-0.5 text-xs text-text-muted">
-          {date} · {match.move_count} moves · {formatTimeFormatLabel(match.time_format)}
-        </div>
+        <div className="mt-0.5 text-xs text-text-muted">{meta}</div>
       </div>
       <Button size="sm" onClick={onImport} loading={importing}>
         Analyse
