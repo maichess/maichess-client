@@ -4,6 +4,7 @@ export type SetupType = 'tournament' | 'matrix' | 'single'
 export type CollectionStatus = 'pending' | 'running' | 'finished'
 export type GameResult = 'ongoing' | 'white_won' | 'black_won' | 'draw'
 export type ColorMode = 'both_colors' | 'random'
+export type MatrixColorMode = 'alternating' | 'random'
 
 export interface CollectionProgress {
   total_games: number
@@ -34,6 +35,7 @@ export interface MatrixConfig {
   bot_ids: string[]
   fen_list: string[]
   games_per_fen: number
+  color_mode: MatrixColorMode
   time_format: TimeFormat
 }
 
@@ -136,6 +138,7 @@ export interface CreateMatrixRequest {
     bot_ids: string[]
     fen_list: string[]
     games_per_fen: number
+    color_mode: MatrixColorMode
     time_format_id: string
   }
 }

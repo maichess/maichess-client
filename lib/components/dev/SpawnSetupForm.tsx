@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useBots } from '@/lib/hooks/useBots'
 import { useTimeFormats } from '@/lib/hooks/useTimeFormats'
 import { useCreateArenaSetup } from '@/lib/hooks/useCreateArenaSetup'
-import type { SetupType, ColorMode } from '@/lib/models/arena'
+import type { SetupType, ColorMode, MatrixColorMode } from '@/lib/models/arena'
 import { Button } from '@/lib/components/ui/Button'
 import { Input } from '@/lib/components/ui/Input'
 import { Spinner } from '@/lib/components/ui/Spinner'
@@ -25,6 +25,7 @@ export function SpawnSetupForm() {
   const [timeFormatId, setTimeFormatId] = useState('')
   const [fensPerStage, setFensPerStage] = useState(1)
   const [colorMode, setColorMode] = useState<ColorMode>('both_colors')
+  const [matrixColorMode, setMatrixColorMode] = useState<MatrixColorMode>('alternating')
   const [gamesPerFen, setGamesPerFen] = useState(1)
   const [keepSwitchingColors, setKeepSwitchingColors] = useState(false)
 
@@ -78,6 +79,7 @@ export function SpawnSetupForm() {
           bot_ids: selectedBotIds,
           fen_list: fenList,
           games_per_fen: gamesPerFen,
+          color_mode: matrixColorMode,
           time_format_id: tfId,
         },
       })
@@ -294,9 +296,26 @@ export function SpawnSetupForm() {
             </div>
           )}
           {tab === 'matrix' && (
+            <div>
+              <label htmlFor="matrix-color-mode" className="text-sm font-medium text-text-secondary mb-1 block">
+                Color assignment
+              </label>
+              <select
+                id="matrix-color-mode"
+                value={matrixColorMode}
+                onChange={(e) => setMatrixColorMode(e.target.value as MatrixColorMode)}
+                className="h-10 w-full rounded-lg border border-border bg-bg-elevated px-3 text-sm text-text-primary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              >
+                <option value="alternating">Alternate colors per game</option>
+                <option value="random">Random colors per game</option>
+              </select>
+            </div>
+          )}
+          {tab === 'matrix' && (
             <p className="sm:col-span-2 text-[11px] text-text-muted">
               Round-robin: every bot pair plays each FEN the specified number of times.
-              Colors alternate automatically.
+              In &quot;alternate&quot; mode colors swap deterministically per game; in
+              &quot;random&quot; mode each game&apos;s colors are assigned at random.
             </p>
           )}
         </div>
