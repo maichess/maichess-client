@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useState } from 'react'
-import { X, Bot } from 'lucide-react'
+import { X, Bot, Cpu } from 'lucide-react'
 import type { AnalysisConfig, AnalysisGameDetail } from '@/lib/models/analysis'
 import { playerInfoName } from '@/lib/models/analysis'
 import { useAnalysisSession } from '@/lib/hooks/useAnalysisSession'
@@ -19,11 +19,16 @@ import { Button } from './ui/Button'
 interface AnalysisClientProps {
   game: AnalysisGameDetail
   config: AnalysisConfig
+  // When false the view opens as a plain past-match viewer (board + moves, no engine).
+  // Defaults to true; deep links from result lists pass `?analysis=off`.
+  analysisEnabled?: boolean
 }
 
-export function AnalysisClient({ game, config }: AnalysisClientProps) {
+export function AnalysisClient({ game, config, analysisEnabled = true }: AnalysisClientProps) {
+  const [engineOn, setEngineOn] = useState(analysisEnabled)
+
   const { state, navigate, playWhatif, undoWhatif, resetWhatif, exportWhatifPgn, changeSettings } =
-    useAnalysisSession(game, config)
+    useAnalysisSession(game, config, engineOn)
 
   const [pgnModal, setPgnModal] = useState<string | null>(null)
 
@@ -37,6 +42,8 @@ export function AnalysisClient({ game, config }: AnalysisClientProps) {
 
   const inWhatif = state.whatifMoves.length > 0
   const hasSession = state.activeSessionId !== null
+  // Navigation is available in read-only mode (client-side) and once a session exists.
+  const ready = !engineOn || hasSession
 
   // When viewing the actual game (not in whatif mode), the move played from
   // this position is the one at game.moves[currentIndex]. Outside that range
@@ -115,14 +122,14 @@ export function AnalysisClient({ game, config }: AnalysisClientProps) {
 
         {/* Navigation controls */}
         <div className="flex gap-1 justify-center">
-          <Button variant="secondary" size="sm" onClick={() => navigate(0)} disabled={!hasSession}>
+          <Button variant="secondary" size="sm" onClick={() => navigate(0)} disabled={!ready}>
             Start
           </Button>
           <Button
             variant="secondary"
             size="sm"
             onClick={() => navigate(Math.max(0, state.currentIndex - 1))}
-            disabled={!hasSession || state.currentIndex <= 0}
+            disabled={!ready || state.currentIndex <= 0}
           >
             ← Prev
           </Button>
@@ -130,7 +137,7 @@ export function AnalysisClient({ game, config }: AnalysisClientProps) {
             variant="secondary"
             size="sm"
             onClick={() => navigate(Math.min(game.moves.length, state.currentIndex + 1))}
-            disabled={!hasSession || state.currentIndex >= game.moves.length}
+            disabled={!ready || state.currentIndex >= game.moves.length}
           >
             Next →
           </Button>
@@ -138,7 +145,7 @@ export function AnalysisClient({ game, config }: AnalysisClientProps) {
             variant="secondary"
             size="sm"
             onClick={() => navigate(game.moves.length)}
-            disabled={!hasSession}
+            disabled={!ready}
           >
             End
           </Button>
@@ -162,6 +169,26 @@ export function AnalysisClient({ game, config }: AnalysisClientProps) {
 
       {/* Sidebar */}
       <div className="flex flex-col gap-3 w-full lg:w-72 xl:w-80">
+        {/* Engine analysis on/off */}
+        <button
+          type="button"
+          onClick={() => setEngineOn((v) => !v)}
+          className="flex items-center justify-between rounded-xl border border-border bg-bg-secondary px-4 py-2.5 text-sm transition-colors hover:border-accent/40"
+        >
+          <span className="flex items-center gap-2 text-text-secondary">
+            <Cpu size={15} />
+            Engine analysis
+          </span>
+          <span
+            className={[
+              'rounded-full px-2 py-0.5 text-xs font-semibold',
+              engineOn ? 'bg-accent/15 text-accent' : 'bg-bg-elevated text-text-muted',
+            ].join(' ')}
+          >
+            {engineOn ? 'On' : 'Off'}
+          </span>
+        </button>
+
         {/* Move list */}
         <div className="rounded-xl border border-border bg-bg-secondary overflow-hidden min-h-40 max-h-60">
           <AnalysisMoveList
@@ -180,18 +207,21 @@ export function AnalysisClient({ game, config }: AnalysisClientProps) {
           complete={state.analysisComplete}
           error={state.analysisError}
           currentFen={state.currentFen}
+          enabled={engineOn}
         />
 
         {/* Copy PGN (full game) / FEN (current position) */}
         <ExportGamePanel pgn={game.pgn} fen={state.currentFen} />
 
-        {/* Advanced settings */}
-        <AdvancedSettings
-          bots={config.bots}
-          botId={state.botId}
-          lineCount={state.lineCount}
-          onApply={changeSettings}
-        />
+        {/* Advanced settings — only meaningful with the engine on */}
+        {engineOn && (
+          <AdvancedSettings
+            bots={config.bots}
+            botId={state.botId}
+            lineCount={state.lineCount}
+            onApply={changeSettings}
+          />
+        )}
       </div>
 
       {/* PGN modal */}

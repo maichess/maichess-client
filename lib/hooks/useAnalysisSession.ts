@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useReducer, useRef } from 'react'
 import type { AnalysisConfig, AnalysisGameDetail, AnalysisLine } from '@/lib/models/analysis'
+import { fenAtIndex } from '@/lib/utils/analysisFen'
 import { useAnalysisSocket } from './useAnalysisSocket'
+
+// Rapid arrow presses would otherwise spawn-then-immediately-cancel an engine stream
+// per press; coalesce them so only the position the user lands on is analysed.
+const NAVIGATE_DEBOUNCE_MS = 120
 
 export interface AnalysisState {
   activeSessionId: string | null
@@ -20,11 +25,13 @@ export interface AnalysisState {
 
 type Action =
   | { type: 'SESSION_CREATED'; sessionId: string; fen: string; index: number }
+  | { type: 'SESSION_ENDED' }
   | { type: 'ANALYSIS_STARTED' }
   | { type: 'ANALYSIS_UPDATE'; depth: number; lines: AnalysisLine[] }
   | { type: 'ANALYSIS_COMPLETE' }
   | { type: 'ANALYSIS_ERROR'; message: string }
   | { type: 'NAVIGATED'; index: number; fen: string }
+  | { type: 'NAVIGATED_LOCAL'; index: number; fen: string }
   | { type: 'WHATIF_PLAYED'; move: string; fen: string }
   | { type: 'WHATIF_UNDONE'; fen: string }
   | { type: 'WHATIF_RESET'; fen: string }
@@ -34,6 +41,19 @@ function reducer(state: AnalysisState, action: Action): AnalysisState {
   switch (action.type) {
     case 'SESSION_CREATED':
       return { ...state, activeSessionId: action.sessionId, currentFen: action.fen, currentIndex: action.index }
+    case 'SESSION_ENDED':
+      // Read-only toggle / teardown: drop the session and any engine output but keep
+      // the viewed position so the board doesn't jump.
+      return {
+        ...state,
+        activeSessionId: null,
+        whatifMoves: [],
+        analysisRunning: false,
+        analysisComplete: false,
+        analysisError: null,
+        currentLines: [],
+        currentDepth: 0,
+      }
     case 'ANALYSIS_STARTED':
       return { ...state, analysisRunning: true, analysisComplete: false, analysisError: null, currentLines: [], currentDepth: 0 }
     case 'ANALYSIS_UPDATE':
@@ -54,6 +74,19 @@ function reducer(state: AnalysisState, action: Action): AnalysisState {
         analysisError: null,
         // navigation always restarts analysis server-side
         analysisRunning: true,
+      }
+    case 'NAVIGATED_LOCAL':
+      // Read-only navigation: move purely client-side, never flag analysis as running.
+      return {
+        ...state,
+        currentIndex: action.index,
+        currentFen: action.fen,
+        whatifMoves: [],
+        currentLines: [],
+        currentDepth: 0,
+        analysisComplete: false,
+        analysisError: null,
+        analysisRunning: false,
       }
     case 'WHATIF_PLAYED':
       return {
@@ -104,7 +137,11 @@ function reducer(state: AnalysisState, action: Action): AnalysisState {
   }
 }
 
-export function useAnalysisSession(game: AnalysisGameDetail, config: AnalysisConfig) {
+export function useAnalysisSession(
+  game: AnalysisGameDetail,
+  config: AnalysisConfig,
+  enabled: boolean = true,
+) {
   const [state, dispatch] = useReducer(reducer, {
     activeSessionId: null,
     currentIndex: 0,
@@ -122,12 +159,16 @@ export function useAnalysisSession(game: AnalysisGameDetail, config: AnalysisCon
   const sessionIdRef = useRef<string | null>(null)
   const botIdRef = useRef(config.default_bot_id)
   const lineCountRef = useRef(config.default_line_count)
+  const currentIndexRef = useRef(0)
+  const navTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Keep refs in sync with state so a re-init (new game) reads the latest settings.
+  // Keep refs in sync with state so a re-init (new game / analysis re-enabled) reads the
+  // latest settings and resumes at the position the user is viewing.
   // Synced in an effect rather than during render (writing a ref during render is unsafe).
   useEffect(() => {
     botIdRef.current = state.botId
     lineCountRef.current = state.lineCount
+    currentIndexRef.current = state.currentIndex
   })
 
   const onUpdate = useCallback((depth: number, lines: AnalysisLine[]) => {
@@ -138,9 +179,25 @@ export function useAnalysisSession(game: AnalysisGameDetail, config: AnalysisCon
 
   useAnalysisSocket(state.activeSessionId, onUpdate, onComplete, onError)
 
-  // Create session and auto-start analysis on mount
+  const runServerNavigate = useCallback(async (sid: string, index: number) => {
+    const res = await fetch(`/api/sessions/${sid}/navigate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ index }),
+    })
+    if (!res.ok) return
+    const data = await res.json()
+    dispatch({ type: 'NAVIGATED', index: data.current_index, fen: data.current_fen })
+  }, [])
+
+  // Create session and auto-start analysis — only when engine analysis is enabled.
+  // In read-only mode no session is created; navigation is computed client-side.
   useEffect(() => {
+    if (!enabled) return
+
     let mounted = true
+    // Resume at the position the user was viewing (e.g. after toggling analysis on).
+    const resumeIndex = currentIndexRef.current
 
     async function init() {
       const sessionRes = await fetch('/api/sessions', {
@@ -159,7 +216,12 @@ export function useAnalysisSession(game: AnalysisGameDetail, config: AnalysisCon
       dispatch({ type: 'SESSION_CREATED', sessionId: sid, fen: sessionData.current_fen, index: sessionData.current_index })
 
       await fetch(`/api/sessions/${sid}/analysis`, { method: 'POST' })
-      if (mounted) dispatch({ type: 'ANALYSIS_STARTED' })
+      if (!mounted) return
+      dispatch({ type: 'ANALYSIS_STARTED' })
+
+      if (resumeIndex > 0) {
+        await runServerNavigate(sid, resumeIndex)
+      }
     }
 
     init()
@@ -172,20 +234,31 @@ export function useAnalysisSession(game: AnalysisGameDetail, config: AnalysisCon
         fetch(`/api/sessions/${sid}`, { method: 'DELETE', keepalive: true }).catch(() => {})
         sessionIdRef.current = null
       }
+      dispatch({ type: 'SESSION_ENDED' })
     }
-  }, [game.id])
+  }, [game.id, enabled, runServerNavigate])
 
   const navigate = useCallback(async (index: number) => {
     const sid = sessionIdRef.current
-    if (!sid) return
-    const res = await fetch(`/api/sessions/${sid}/navigate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ index }),
-    })
-    if (!res.ok) return
-    const data = await res.json()
-    dispatch({ type: 'NAVIGATED', index: data.current_index, fen: data.current_fen })
+
+    // No session (read-only mode): navigate purely from the precomputed FENs.
+    if (!sid) {
+      const clamped = Math.max(0, Math.min(index, game.moves.length))
+      dispatch({ type: 'NAVIGATED_LOCAL', index: clamped, fen: fenAtIndex(game, clamped) })
+      return
+    }
+
+    // Debounce server navigation so a burst of presses spawns one engine stream, not one
+    // per press (each restart cancels the last — the source of the "Cancelled" noise).
+    if (navTimerRef.current) clearTimeout(navTimerRef.current)
+    navTimerRef.current = setTimeout(() => {
+      void runServerNavigate(sid, index)
+    }, NAVIGATE_DEBOUNCE_MS)
+  }, [game, runServerNavigate])
+
+  // Clear a pending debounced navigation on unmount.
+  useEffect(() => () => {
+    if (navTimerRef.current) clearTimeout(navTimerRef.current)
   }, [])
 
   const playWhatif = useCallback(async (move: string): Promise<boolean> => {

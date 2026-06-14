@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useSearch } from '@/lib/hooks/useSearch'
+import { useOpenAnalysis } from '@/lib/hooks/useOpenAnalysis'
 import type {
   GameSearchResult,
   MatchSearchResult,
@@ -135,7 +136,7 @@ export function SearchPanel() {
 
       <ul className="mt-3 divide-y divide-border">
         {results.map((r, i) => (
-          <li key={i} className="py-2 text-sm text-text-primary">
+          <li key={i} className="text-sm text-text-primary">
             <ResultRow scope={scope} result={r} />
           </li>
         ))}
@@ -144,32 +145,62 @@ export function SearchPanel() {
   )
 }
 
+// A result row opens the read-only (engine-off) analysis viewer. Game results carry an
+// analysis game id directly; match results are imported via the from-match flow first.
 function ResultRow({ scope, result }: { scope: SearchScope; result: AnyResult }) {
+  const { openGame, openMatch, pending } = useOpenAnalysis()
+
+  let id: string
+  let isMatch: boolean
+  let content: React.ReactNode
+
   if (scope === 'games') {
     const g = result as GameSearchResult
-    return (
-      <span>
+    id = g.game_id
+    isMatch = false
+    content = (
+      <>
         <span className="text-text-muted">{g.eco || '—'}</span> {g.white} vs {g.black}{' '}
         <span className="text-text-muted">{g.result}</span>
         {g.opening ? <span className="text-text-muted"> · {g.opening}</span> : null}
-      </span>
+      </>
     )
-  }
-  if (scope === 'matches') {
+  } else if (scope === 'matches') {
     const m = result as MatchSearchResult
-    return (
-      <span>
+    id = m.match_id
+    isMatch = true
+    content = (
+      <>
         {m.white} vs {m.black} <span className="text-text-muted">{m.status}</span>
         {m.source === 'external' ? <span className="text-accent"> · {m.external_provider}</span> : null}
-      </span>
+      </>
+    )
+  } else {
+    const p = result as PositionSearchResult
+    id = p.id
+    isMatch = p.kind === 'match'
+    content = (
+      <>
+        <span className="text-text-muted">{p.kind}</span> {p.white} vs {p.black}{' '}
+        <span className="text-text-muted">ply {p.ply}</span>
+      </>
     )
   }
-  const p = result as PositionSearchResult
+
+  const open = () => (isMatch ? openMatch(id, { readonly: true }) : openGame(id, { readonly: true }))
+
   return (
-    <span>
-      <span className="text-text-muted">{p.kind}</span> {p.white} vs {p.black}{' '}
-      <span className="text-text-muted">ply {p.ply}</span>
-    </span>
+    <button
+      type="button"
+      onClick={open}
+      disabled={pending === id}
+      className="flex w-full items-center justify-between gap-3 py-2 text-left transition-colors hover:text-accent disabled:opacity-60"
+    >
+      <span>{content}</span>
+      <span className="shrink-0 text-xs text-text-muted">
+        {pending === id ? 'Opening…' : 'Analyse →'}
+      </span>
+    </button>
   )
 }
 

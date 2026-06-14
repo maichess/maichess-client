@@ -13,9 +13,10 @@ interface AnalysisPanelProps {
   complete: boolean
   error: string | null
   currentFen: string
+  enabled?: boolean
 }
 
-export function AnalysisPanel({ lines, depth, running, complete, error, currentFen }: AnalysisPanelProps) {
+export function AnalysisPanel({ lines, depth, running, complete, error, currentFen, enabled = true }: AnalysisPanelProps) {
   const sanLines = useMemo(
     () => lines.map((line) => uciListToSan(line.moves, currentFen)),
     [lines, currentFen]
@@ -26,20 +27,26 @@ export function AnalysisPanel({ lines, depth, running, complete, error, currentF
       <div className="flex items-center justify-between px-3 py-2 border-b border-border">
         <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
           Analysis
-          {depth > 0 && <span className="ml-1 text-text-secondary">depth {depth}</span>}
+          {enabled && depth > 0 && <span className="ml-1 text-text-secondary">depth {depth}</span>}
         </span>
-        {running && !complete && <Spinner size="sm" />}
-        {complete && (
+        {enabled && running && !complete && <Spinner size="sm" />}
+        {enabled && complete && (
           <span className="text-xs text-text-muted">Complete</span>
         )}
       </div>
 
       <div className="px-3 py-2 min-h-[80px]">
-        {error && (
+        {!enabled && (
+          <p className="text-xs text-text-muted py-6 text-center">
+            Engine analysis off — viewing only. Turn it on to analyse positions.
+          </p>
+        )}
+
+        {enabled && error && (
           <p className="text-xs text-danger py-2">{error}</p>
         )}
 
-        {!error && lines.length === 0 && (
+        {enabled && !error && lines.length === 0 && (
           <p className="text-xs text-text-muted py-2 text-center">
             {running ? 'Analysing…' : 'No analysis'}
           </p>

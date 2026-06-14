@@ -10,7 +10,7 @@ import { useTimeFormats } from '@/lib/hooks/useTimeFormats'
 import { formatTimeFormatDuration, formatTimeFormatLabel } from '@/lib/utils/time'
 import { ROUTES } from '@/lib/constants/routes'
 import { Swords, Bot, Users } from 'lucide-react'
-import type { OpponentType, QueueRequest } from '@/lib/models/queue'
+import type { ColorPreference, OpponentType, QueueRequest } from '@/lib/models/queue'
 import type { TimeFormat, TimeFormatCategory } from '@/lib/models/match'
 
 const CATEGORY_LABELS: Record<TimeFormatCategory, string> = {
@@ -33,6 +33,8 @@ function PlayForm() {
   const [whiteBot, setWhiteBot] = useState('')
   const [blackBot, setBlackBot] = useState('')
   const [allowFlagged, setAllowFlagged] = useState(false)
+  const [humanColor, setHumanColor] = useState<ColorPreference>('any')
+  const [botColor, setBotColor] = useState<ColorPreference>('random')
   const [botVsBotError, setBotVsBotError] = useState<string | null>(null)
   const [botVsBotSubmitting, setBotVsBotSubmitting] = useState(false)
 
@@ -83,8 +85,17 @@ function PlayForm() {
 
     const request: QueueRequest =
       opponentType === 'bot'
-        ? { time_format_id: timeFormatId, opponent: { type: 'bot', bot_id: selectedBot } }
-        : { time_format_id: timeFormatId, opponent: { type: 'human' }, allow_flagged: allowFlagged }
+        ? {
+            time_format_id: timeFormatId,
+            opponent: { type: 'bot', bot_id: selectedBot },
+            color_preference: botColor,
+          }
+        : {
+            time_format_id: timeFormatId,
+            opponent: { type: 'human' },
+            allow_flagged: allowFlagged,
+            color_preference: humanColor,
+          }
     await joinQueue(request)
   }
 
@@ -161,6 +172,17 @@ function PlayForm() {
             </fieldset>
           )}
 
+          {/* Your color — vs bot */}
+          {opponentType === 'bot' && (
+            <ColorSelector
+              label="Your color"
+              value={botColor}
+              onChange={setBotColor}
+              anyValue="random"
+              anyLabel="Random"
+            />
+          )}
+
           {/* Bot pickers — bot-vs-bot */}
           {opponentType === 'bot-vs-bot' && (
             <div className="mb-6 grid gap-3 sm:grid-cols-2">
@@ -214,6 +236,17 @@ function PlayForm() {
               </div>
             )}
           </fieldset>
+
+          {/* Your color — human queue */}
+          {opponentType === 'human' && (
+            <ColorSelector
+              label="Your color"
+              value={humanColor}
+              onChange={setHumanColor}
+              anyValue="any"
+              anyLabel="Any"
+            />
+          )}
 
           {/* Anti-cheat matchmaking filter — human opponents only */}
           {opponentType === 'human' && (
@@ -295,6 +328,49 @@ function BotPicker({
           ))}
         </select>
       )}
+    </fieldset>
+  )
+}
+
+function ColorSelector({
+  label,
+  value,
+  onChange,
+  anyValue,
+  anyLabel,
+}: {
+  label: string
+  value: ColorPreference
+  onChange: (value: ColorPreference) => void
+  anyValue: ColorPreference
+  anyLabel: string
+}) {
+  const options: { value: ColorPreference; label: string }[] = [
+    { value: 'white', label: 'White' },
+    { value: anyValue, label: anyLabel },
+    { value: 'black', label: 'Black' },
+  ]
+
+  return (
+    <fieldset className="mb-6">
+      <legend className="mb-2 text-sm font-medium text-text-secondary">{label}</legend>
+      <div className="grid grid-cols-3 gap-2">
+        {options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onChange(option.value)}
+            className={[
+              'rounded-xl border py-3 text-sm font-medium transition-all cursor-pointer',
+              value === option.value
+                ? 'border-accent bg-accent/10 text-accent'
+                : 'border-border bg-bg-secondary text-text-secondary hover:border-accent/40',
+            ].join(' ')}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
     </fieldset>
   )
 }

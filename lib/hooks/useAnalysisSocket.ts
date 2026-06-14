@@ -20,6 +20,17 @@ interface AnalysisErrorEvent {
   message: string
 }
 
+// A client-initiated cancel (navigation restarting the engine stream) surfaces as a
+// gRPC "Cancelled" status. It is expected, not a failure, so it must never reach the UI.
+function isCancellationMessage(message: string): boolean {
+  const m = message.toLowerCase()
+  return (
+    m.includes('cancelled') ||
+    m.includes('canceled') ||
+    m.includes('operationcanceledexception')
+  )
+}
+
 export function useAnalysisSocket(
   activeSessionId: string | null,
   onUpdate: (depth: number, lines: AnalysisLine[]) => void,
@@ -41,6 +52,7 @@ export function useAnalysisSocket(
 
     function handleError(data: AnalysisErrorEvent) {
       if (data.session_id !== activeSessionId) return
+      if (isCancellationMessage(data.message)) return
       onError(data.message)
     }
 

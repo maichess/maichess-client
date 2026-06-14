@@ -9,6 +9,7 @@ import {
   type MatchSummary,
 } from '@/lib/models/match'
 import { ROUTES } from '@/lib/constants/routes'
+import { useOpenAnalysis } from '@/lib/hooks/useOpenAnalysis'
 import { Spinner } from '@/lib/components/ui/Spinner'
 import { Button } from '@/lib/components/ui/Button'
 
@@ -143,6 +144,7 @@ export function AllGamesPanel() {
                   <Th>Result</Th>
                   <Th>Source</Th>
                   <Th>Initiator</Th>
+                  <Th>Analyse</Th>
                 </tr>
               </thead>
               <tbody>
@@ -173,6 +175,7 @@ export function AllGamesPanel() {
 }
 
 function GameRow({ match }: { match: MatchSummary }) {
+  const { openMatch, pending } = useOpenAnalysis()
   const href = match.status === 'ongoing' ? ROUTES.watchMatch(match.id) : ROUTES.match(match.id)
   const when =
     match.finished_at_ms && match.finished_at_ms > 0
@@ -198,6 +201,16 @@ function GameRow({ match }: { match: MatchSummary }) {
         <SourceTag match={match} botVsBot={botVsBot} />
       </Td>
       <Td className="text-text-muted">{initiator || '—'}</Td>
+      <Td>
+        <button
+          type="button"
+          onClick={() => openMatch(match.id, { readonly: true })}
+          disabled={pending === match.id}
+          className="text-accent hover:underline disabled:opacity-50"
+        >
+          {pending === match.id ? 'Opening…' : 'Analyse'}
+        </button>
+      </Td>
     </tr>
   )
 }

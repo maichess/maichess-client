@@ -32,10 +32,13 @@ async function getConfig(token: string): Promise<AnalysisConfig | null> {
 
 export default async function AnalysisGamePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ analysis?: string }>
 }) {
   const { id } = await params
+  const { analysis } = await searchParams
   const cookieStore = await cookies()
   const token = cookieStore.get('access_token')?.value
   if (!token) redirect(ROUTES.login)
@@ -44,5 +47,6 @@ export default async function AnalysisGamePage({
 
   if (!game || !config) redirect(ROUTES.analysis)
 
-  return <AnalysisClient game={game} config={config} />
+  // Result lists deep-link with `?analysis=off` to open the read-only viewer.
+  return <AnalysisClient game={game} config={config} analysisEnabled={analysis !== 'off'} />
 }
