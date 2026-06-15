@@ -310,7 +310,10 @@ function GameLink({
   game: ArenaGameResult
   botName: (id: string) => string
 }) {
-  const isLive = game.result === 'ongoing'
+  // Use the arena scheduler status (not the match result) to tell a queued game
+  // apart from one that is actually playing: both have result 'ongoing'.
+  const isLive = game.status === 'running'
+  const isPending = game.status === 'pending'
   const resultStr =
     game.result === 'white_won'
       ? '1-0'
@@ -322,11 +325,8 @@ function GameLink({
 
   const label = game.fen_label || 'Standard'
 
-  return (
-    <Link
-      href={isLive ? ROUTES.watchMatch(game.match_id) : ROUTES.watchMatch(game.match_id)}
-      className="flex items-center gap-3 rounded-lg border border-border bg-bg-secondary px-3 py-2 text-xs hover:border-accent/50 hover:bg-bg-elevated transition-all group"
-    >
+  const body = (
+    <>
       <span className="text-text-muted shrink-0 w-24 truncate" title={label}>
         {label}
       </span>
@@ -339,6 +339,30 @@ function GameLink({
           live
         </span>
       )}
+      {isPending && (
+        <span className="rounded-full bg-text-muted/15 text-text-muted text-[10px] font-semibold px-1.5 py-0.5 shrink-0">
+          pending
+        </span>
+      )}
+    </>
+  )
+
+  // A pending game has not been launched yet (no match id), so it is not
+  // watchable — render it as a static row instead of a link.
+  if (isPending) {
+    return (
+      <div className="flex items-center gap-3 rounded-lg border border-border bg-bg-secondary px-3 py-2 text-xs opacity-70">
+        {body}
+      </div>
+    )
+  }
+
+  return (
+    <Link
+      href={ROUTES.watchMatch(game.match_id)}
+      className="flex items-center gap-3 rounded-lg border border-border bg-bg-secondary px-3 py-2 text-xs hover:border-accent/50 hover:bg-bg-elevated transition-all group"
+    >
+      {body}
     </Link>
   )
 }

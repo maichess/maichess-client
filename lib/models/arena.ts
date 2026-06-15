@@ -3,6 +3,10 @@ import type { TimeFormat } from './match'
 export type SetupType = 'tournament' | 'matrix' | 'single'
 export type CollectionStatus = 'pending' | 'running' | 'finished'
 export type GameResult = 'ongoing' | 'white_won' | 'black_won' | 'draw'
+// Arena scheduler state of a single game, distinct from its match result: a game
+// can be queued behind the global concurrency cap (pending), in flight (running),
+// or done (finished). `result` stays 'ongoing' for both pending and running.
+export type ArenaGameStatus = 'pending' | 'running' | 'finished'
 export type ColorMode = 'both_colors' | 'random'
 export type MatrixColorMode = 'alternating' | 'random'
 
@@ -21,6 +25,7 @@ export interface ArenaGameResult {
   black_bot_id: string
   result: GameResult
   order: number
+  status: ArenaGameStatus
 }
 
 export interface TournamentConfig {
