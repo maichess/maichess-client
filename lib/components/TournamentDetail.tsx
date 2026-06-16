@@ -105,6 +105,15 @@ export function TournamentDetail({ id }: Props) {
             {isStarted && tournament.round != null && ` · Round ${tournament.round}`}
           </div>
         </div>
+
+        {!isCreated && (
+          <a
+            href={`/api/tournaments/${id}/export`}
+            className="shrink-0 rounded-lg border border-border bg-bg-secondary px-3 py-2 text-xs font-medium text-text-primary transition-colors hover:border-accent/50 hover:text-accent"
+          >
+            Download PGN
+          </a>
+        )}
       </div>
 
       {actionError && (

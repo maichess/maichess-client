@@ -15,6 +15,21 @@ export async function bridgeFetch(path: string, init?: RequestInit): Promise<Res
   return proxyResponse(res)
 }
 
+// Like bridgeFetch but returns the bridge response untouched, for non-JSON
+// payloads (e.g. PGN export) where the JSON-wrapping in proxyResponse would
+// corrupt the body.
+export async function bridgeFetchRaw(path: string, init?: RequestInit): Promise<Response> {
+  const cookieStore = await cookies()
+  return fetch(`${BRIDGE}${path}`, {
+    ...init,
+    headers: {
+      ...init?.headers,
+      Cookie: cookieStore.toString(),
+    },
+    cache: 'no-store',
+  })
+}
+
 async function proxyResponse(res: Response): Promise<Response> {
   const text = await res.text()
   if (!text) {

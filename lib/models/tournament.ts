@@ -100,3 +100,9 @@ export interface CreateTournamentForm {
 export interface TournamentConfig {
   default_server_url: string
 }
+
+export interface Opening {
+  key: string
+  name: string
+  fen: string
+}
