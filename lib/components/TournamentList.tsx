@@ -132,57 +132,53 @@ export function TournamentList() {
   const { data, loading, error, refresh } = useTournaments()
   const [showCreate, setShowCreate] = useState(false)
 
-  if (loading) {
-    return (
-      <div className="flex justify-center py-12">
-        <Spinner size="lg" />
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-4">
-        <ServerConfig onServerChange={refresh} />
-        <div className="rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
-          {error}
-        </div>
-      </div>
-    )
-  }
-
   const totalCount = data.created.length + data.started.length + data.finished.length
 
+  // ServerConfig stays mounted at all times so the tournament server URL can be
+  // edited even while a list fetch against an unreachable URL is still hanging.
+  // Only the list area below it reflects the loading/error state.
   return (
     <div className="space-y-6">
       <ServerConfig onServerChange={refresh} />
 
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-text-muted">
-          {totalCount} tournament{totalCount === 1 ? '' : 's'}
-        </span>
-        <Button size="sm" onClick={() => setShowCreate(!showCreate)}>
-          {showCreate ? 'Cancel' : 'Create Tournament'}
-        </Button>
-      </div>
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <Spinner size="lg" />
+        </div>
+      ) : error ? (
+        <div className="rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-danger">
+          {error}
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-text-muted">
+              {totalCount} tournament{totalCount === 1 ? '' : 's'}
+            </span>
+            <Button size="sm" onClick={() => setShowCreate(!showCreate)}>
+              {showCreate ? 'Cancel' : 'Create Tournament'}
+            </Button>
+          </div>
 
-      {showCreate && (
-        <TournamentCreateForm
-          onCreated={() => {
-            setShowCreate(false)
-            refresh()
-          }}
-        />
-      )}
+          {showCreate && (
+            <TournamentCreateForm
+              onCreated={() => {
+                setShowCreate(false)
+                refresh()
+              }}
+            />
+          )}
 
-      <TournamentSection title="In Progress" tournaments={data.started} badge={data.started.length > 0 ? 'LIVE' : undefined} />
-      <TournamentSection title="Waiting to Start" tournaments={data.created} />
-      <TournamentSection title="Finished" tournaments={data.finished} />
+          <TournamentSection title="In Progress" tournaments={data.started} badge={data.started.length > 0 ? 'LIVE' : undefined} />
+          <TournamentSection title="Waiting to Start" tournaments={data.created} />
+          <TournamentSection title="Finished" tournaments={data.finished} />
 
-      {totalCount === 0 && (
-        <p className="rounded-xl border border-border bg-bg-secondary p-6 text-center text-text-muted">
-          No tournaments yet. Create one to get started.
-        </p>
+          {totalCount === 0 && (
+            <p className="rounded-xl border border-border bg-bg-secondary p-6 text-center text-text-muted">
+              No tournaments yet. Create one to get started.
+            </p>
+          )}
+        </>
       )}
     </div>
   )
