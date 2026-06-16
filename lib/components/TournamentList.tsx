@@ -8,6 +8,7 @@ import { useTournamentConfig } from '@/lib/hooks/useTournamentConfig'
 import { Spinner } from '@/lib/components/ui/Spinner'
 import { Button } from '@/lib/components/ui/Button'
 import { TournamentCreateForm } from './TournamentCreateForm'
+import { RegisteredBotsPanel } from './RegisteredBotsPanel'
 import type { TournamentInfo } from '@/lib/models/tournament'
 
 function formatClock(clock: { limit: number; increment: number }): string {
@@ -140,6 +141,7 @@ export function TournamentList() {
   return (
     <div className="space-y-6">
       <ServerConfig onServerChange={refresh} />
+      <RegisteredBotsPanel />
 
       {loading ? (
         <div className="flex justify-center py-12">

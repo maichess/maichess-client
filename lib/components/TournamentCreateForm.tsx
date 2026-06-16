@@ -42,10 +42,17 @@ export function TournamentCreateForm({ onCreated }: Props) {
   const [maxConcurrentGames, setMaxConcurrentGames] = useState('')
   const [startChoice, setStartChoice] = useState(START_STANDARD)
   const [customFen, setCustomFen] = useState('')
+  const [thematic, setThematic] = useState(false)
+  const [selectedOpenings, setSelectedOpenings] = useState<string[]>([])
   const [botId, setBotId] = useState('')
 
   const isGroupStage = format === 'groupStage'
   const isCustomStart = startChoice === START_CUSTOM
+
+  function toggleOpening(key: string, checked: boolean) {
+    setSelectedOpenings((prev) =>
+      checked ? [...prev, key] : prev.filter((k) => k !== key))
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -65,7 +72,11 @@ export function TournamentCreateForm({ onCreated }: Props) {
 
       if (isGroupStage) body.groupSize = groupSize
 
-      if (startChoice === START_CUSTOM) {
+      if (thematic && selectedOpenings.length > 0) {
+        // Thematic book: each pairing plays every selected opening with both
+        // colours. The server derives matchesPerPairing (2 * openings).
+        body.openings = selectedOpenings.join(',')
+      } else if (startChoice === START_CUSTOM) {
         if (customFen.trim()) body.startPosition = customFen.trim()
       } else if (startChoice !== START_STANDARD) {
         body.opening = startChoice
@@ -213,28 +224,72 @@ export function TournamentCreateForm({ onCreated }: Props) {
           />
         </div>
 
-        <div>
-          <label className="mb-1 block text-xs text-text-muted">Start position</label>
-          <select className={inputClass} value={startChoice} onChange={(e) => setStartChoice(e.target.value)}>
-            <option value={START_STANDARD}>Standard</option>
-            {openings.map((o) => (
-              <option key={o.key} value={o.key}>{o.name}</option>
-            ))}
-            <option value={START_CUSTOM}>Custom FEN…</option>
-          </select>
-        </div>
-
-        {isCustomStart && (
-          <div className="sm:col-span-2">
-            <label className="mb-1 block text-xs text-text-muted">Custom starting FEN</label>
+        <div className="sm:col-span-2 space-y-2">
+          <div className="flex items-center gap-2">
             <input
-              className={inputClass}
-              value={customFen}
-              onChange={(e) => setCustomFen(e.target.value)}
-              placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+              id="thematic"
+              type="checkbox"
+              checked={thematic}
+              onChange={(e) => setThematic(e.target.checked)}
+              className="h-4 w-4 rounded border-border bg-bg-elevated accent-accent"
             />
+            <label htmlFor="thematic" className="text-xs text-text-muted">
+              Thematic opening book — each pairing plays every selected opening with both colours
+            </label>
           </div>
-        )}
+
+          {thematic ? (
+            <div className="rounded-lg border border-border bg-bg-elevated p-3">
+              {openings.length === 0 ? (
+                <p className="text-xs text-text-muted">No openings available.</p>
+              ) : (
+                <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+                  {openings.map((o) => (
+                    <label key={o.key} className="flex items-center gap-2 text-sm text-text-primary">
+                      <input
+                        type="checkbox"
+                        checked={selectedOpenings.includes(o.key)}
+                        onChange={(e) => toggleOpening(o.key, e.target.checked)}
+                        className="h-4 w-4 rounded border-border bg-bg-elevated accent-accent"
+                      />
+                      {o.name}
+                    </label>
+                  ))}
+                </div>
+              )}
+              <p className="mt-2 text-[10px] text-text-muted">
+                {selectedOpenings.length > 0
+                  ? `${selectedOpenings.length} opening${selectedOpenings.length === 1 ? '' : 's'} → ${selectedOpenings.length * 2} games per pairing`
+                  : 'Select at least one opening.'}
+              </p>
+            </div>
+          ) : (
+            <>
+              <div>
+                <label className="mb-1 block text-xs text-text-muted">Start position</label>
+                <select className={inputClass} value={startChoice} onChange={(e) => setStartChoice(e.target.value)}>
+                  <option value={START_STANDARD}>Standard</option>
+                  {openings.map((o) => (
+                    <option key={o.key} value={o.key}>{o.name}</option>
+                  ))}
+                  <option value={START_CUSTOM}>Custom FEN…</option>
+                </select>
+              </div>
+
+              {isCustomStart && (
+                <div>
+                  <label className="mb-1 block text-xs text-text-muted">Custom starting FEN</label>
+                  <input
+                    className={inputClass}
+                    value={customFen}
+                    onChange={(e) => setCustomFen(e.target.value)}
+                    placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+                  />
+                </div>
+              )}
+            </>
+          )}
+        </div>
 
         <div className="flex items-center gap-2 sm:col-span-2">
           <input

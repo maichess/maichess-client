@@ -106,3 +106,9 @@ export interface Opening {
   name: string
   fen: string
 }
+
+export interface RegisteredBot {
+  id: string
+  name: string
+  maichess_bot_id: string | null
+}
