@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Swords, ListVideo, Search, Globe } from 'lucide-react'
+import { Swords, ListVideo, Search, Globe, BarChart3 } from 'lucide-react'
 import { ROUTES } from '@/lib/constants/routes'
 import type { ReactNode } from 'react'
 
@@ -11,6 +11,7 @@ const ITEMS: { href: string; label: string; icon: ReactNode }[] = [
   { href: ROUTES.arenaList, label: 'Bot Arena', icon: <Swords size={14} /> },
   { href: ROUTES.gamesDev, label: 'All games history', icon: <ListVideo size={14} /> },
   { href: ROUTES.searchDev, label: 'Search', icon: <Search size={14} /> },
+  { href: ROUTES.insights, label: 'Insights', icon: <BarChart3 size={14} /> },
   { href: ROUTES.lichessPlay, label: 'Play on Lichess', icon: <Globe size={14} /> },
 ]
 

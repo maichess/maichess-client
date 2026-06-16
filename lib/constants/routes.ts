@@ -20,5 +20,7 @@ export const ROUTES = {
   searchDev: '/tools/search',
   gamesDev: '/tools/games',
   lichessPlay: '/tools/lichess',
+  insights: '/tools/insights',
+  insightsCorpus: (id: string) => `/tools/insights/${id}`,
   anticheatDev: '/dev/anticheat',
 } as const

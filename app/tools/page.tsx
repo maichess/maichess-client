@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Swords, ListVideo, Search, Globe } from 'lucide-react'
+import { Swords, ListVideo, Search, Globe, BarChart3 } from 'lucide-react'
 import { requireUser } from '@/lib/utils/serverUser'
 import { ROUTES } from '@/lib/constants/routes'
 
@@ -24,6 +24,13 @@ const TOOLS = [
     icon: Search,
     description:
       'Find your games and matches by player, bot, or opening (partial matches work), or look up every game that reached a given FEN position.',
+  },
+  {
+    href: ROUTES.insights,
+    title: 'Insights',
+    icon: BarChart3,
+    description:
+      'Analyze massive historical corpora (Lichess monthly dumps or your own PGN uploads) with Spark, then explore top openings, common endgames and positions, and the tricky spots where players blunder under pressure.',
   },
   {
     href: ROUTES.lichessPlay,
