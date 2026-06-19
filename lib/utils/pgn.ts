@@ -1,7 +1,7 @@
 import { Chess } from 'chess.js'
 import type { Match, MatchStatus } from '@/lib/models/match'
 import { playerDisplayName } from '@/lib/models/match'
-import { formatTimeFormatLabel } from '@/lib/utils/time'
+import { formatTimeFormatLabel, msToPgnClockString } from '@/lib/utils/time'
 
 const INITIAL_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
@@ -30,10 +30,15 @@ function todayUtcDate(): string {
  * Builds a PGN from a finished match. Replays UCI moves through chess.js so the
  * generated movetext is SAN. Stops appending at the first illegal move (defensive
  * — the API is authoritative — but we'd rather export a partial PGN than throw).
+ *
+ * When the match carries `clock_history`, each move is annotated with a standard
+ * `{[%clk H:MM:SS]}` comment for the side that just moved; without it the movetext is
+ * exactly as before.
  */
 export function matchToPgn(match: Match): string {
   const chess = new Chess(INITIAL_FEN)
-  for (const uci of match.moves) {
+  for (let i = 0; i < match.moves.length; i++) {
+    const uci = match.moves[i]
     try {
       const ok = chess.move({
         from: uci.slice(0, 2),
@@ -43,6 +48,12 @@ export function matchToPgn(match: Match): string {
       if (!ok) break
     } catch {
       break
+    }
+
+    const snapshot = match.clock_history?.[i]
+    if (snapshot) {
+      const remaining = i % 2 === 0 ? snapshot.white_time_ms : snapshot.black_time_ms
+      chess.setComment(`[%clk ${msToPgnClockString(remaining)}]`)
     }
   }
 

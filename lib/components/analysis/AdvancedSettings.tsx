@@ -7,10 +7,19 @@ interface AdvancedSettingsProps {
   bots: Bot[]
   botId: string
   lineCount: number
+  defaultBotId: string
+  defaultLineCount: number
   onApply: (botId: string, lineCount: number) => void
 }
 
-export function AdvancedSettings({ bots, botId, lineCount, onApply }: AdvancedSettingsProps) {
+export function AdvancedSettings({
+  bots,
+  botId,
+  lineCount,
+  defaultBotId,
+  defaultLineCount,
+  onApply,
+}: AdvancedSettingsProps) {
   const [open, setOpen] = useState(false)
   const [localBotId, setLocalBotId] = useState(botId)
   const [localLineCount, setLocalLineCount] = useState(lineCount)
@@ -18,6 +27,16 @@ export function AdvancedSettings({ bots, botId, lineCount, onApply }: AdvancedSe
   function handleApply() {
     onApply(localBotId, localLineCount)
   }
+
+  function handleReset() {
+    setLocalBotId(defaultBotId)
+    setLocalLineCount(defaultLineCount)
+    onApply(defaultBotId, defaultLineCount)
+  }
+
+  // Mirrors Apply's disabled logic: nothing to reset when the applied settings are
+  // already the defaults.
+  const atDefaults = botId === defaultBotId && lineCount === defaultLineCount
 
   return (
     <div className="rounded-xl border border-border bg-bg-secondary overflow-hidden">
@@ -72,6 +91,14 @@ export function AdvancedSettings({ bots, botId, lineCount, onApply }: AdvancedSe
             className="w-full rounded-md bg-accent text-accent-text py-1.5 text-sm font-medium hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Apply
+          </button>
+
+          <button
+            onClick={handleReset}
+            disabled={atDefaults}
+            className="w-full rounded-md border border-border bg-bg-elevated text-text-secondary py-1.5 text-sm font-medium hover:text-text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Reset to default
           </button>
         </div>
       )}

@@ -2,15 +2,18 @@
 
 import { useEffect, useMemo, useRef } from 'react'
 import { uciListToSan } from '@/lib/utils/san'
+import { deriveMoveClocks } from '@/lib/utils/moveClocks'
+import type { ClockSnapshot } from '@/lib/models/match'
 
 interface AnalysisMoveListProps {
   moves: string[]
   startingFen?: string
   currentIndex: number
   onNavigate: (index: number) => void
+  clockHistory?: ClockSnapshot[]
 }
 
-export function AnalysisMoveList({ moves, startingFen, currentIndex, onNavigate }: AnalysisMoveListProps) {
+export function AnalysisMoveList({ moves, startingFen, currentIndex, onNavigate, clockHistory }: AnalysisMoveListProps) {
   const activeRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
@@ -18,6 +21,7 @@ export function AnalysisMoveList({ moves, startingFen, currentIndex, onNavigate 
   }, [currentIndex])
 
   const sanMoves = useMemo(() => uciListToSan(moves, startingFen), [moves, startingFen])
+  const clocks = useMemo(() => deriveMoveClocks(clockHistory), [clockHistory])
 
   if (sanMoves.length === 0) {
     return (
@@ -56,13 +60,14 @@ export function AnalysisMoveList({ moves, startingFen, currentIndex, onNavigate 
                       ref={currentIndex === whiteIdx + 1 ? activeRef : undefined}
                       onClick={() => onNavigate(whiteIdx + 1)}
                       className={[
-                        'w-full text-left font-mono px-1 rounded transition-colors',
+                        'w-full font-mono px-1 rounded transition-colors flex items-baseline justify-between gap-1',
                         currentIndex === whiteIdx + 1
                           ? 'bg-accent text-accent-text'
                           : 'text-text-primary hover:bg-bg-elevated',
                       ].join(' ')}
                     >
-                      {white}
+                      <span>{white}</span>
+                      <MoveClock clock={clocks[whiteIdx]} />
                     </button>
                   </td>
                   <td className="py-0.5 px-1 w-1/2">
@@ -71,13 +76,14 @@ export function AnalysisMoveList({ moves, startingFen, currentIndex, onNavigate 
                         ref={currentIndex === blackIdx + 1 ? activeRef : undefined}
                         onClick={() => onNavigate(blackIdx + 1)}
                         className={[
-                          'w-full text-left font-mono px-1 rounded transition-colors',
+                          'w-full font-mono px-1 rounded transition-colors flex items-baseline justify-between gap-1',
                           currentIndex === blackIdx + 1
                             ? 'bg-accent text-accent-text'
                             : 'text-text-secondary hover:bg-bg-elevated',
                         ].join(' ')}
                       >
-                        {black}
+                        <span>{black}</span>
+                        <MoveClock clock={clocks[blackIdx]} />
                       </button>
                     )}
                   </td>
@@ -88,5 +94,17 @@ export function AnalysisMoveList({ moves, startingFen, currentIndex, onNavigate 
         </table>
       </div>
     </div>
+  )
+}
+
+function MoveClock({ clock }: { clock?: { remaining: string; spent: string | null } }) {
+  if (!clock) return null
+  return (
+    <span
+      className="text-[10px] font-normal text-text-muted tabular-nums shrink-0"
+      title={clock.spent ? `${clock.spent} spent` : undefined}
+    >
+      {clock.remaining}
+    </span>
   )
 }

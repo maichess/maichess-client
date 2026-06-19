@@ -72,6 +72,14 @@ export function AnalysisClient({ game, config, analysisEnabled = true }: Analysi
   const whiteIsBot = !!game.white.bot_id
   const blackIsBot = !!game.black.bot_id
 
+  // Which engine the analysis is currently running against, and whether it is the
+  // server default (vs a user override via Advanced settings).
+  const engineName = useMemo(
+    () => config.bots.find((b) => b.id === state.botId)?.name ?? state.botId,
+    [config.bots, state.botId]
+  )
+  const isDefaultEngine = state.botId === config.default_bot_id
+
   async function handleExportPgn() {
     const pgn = await exportWhatifPgn()
     if (pgn) setPgnModal(pgn)
@@ -196,6 +204,7 @@ export function AnalysisClient({ game, config, analysisEnabled = true }: Analysi
             startingFen={game.starting_fen}
             currentIndex={state.currentIndex}
             onNavigate={navigate}
+            clockHistory={game.clock_history}
           />
         </div>
 
@@ -213,12 +222,32 @@ export function AnalysisClient({ game, config, analysisEnabled = true }: Analysi
         {/* Copy PGN (full game) / FEN (current position) */}
         <ExportGamePanel pgn={game.pgn} fen={state.currentFen} />
 
+        {/* Current engine + default/custom indicator — only with the engine on */}
+        {engineOn && (
+          <div className="flex items-center justify-between rounded-xl border border-border bg-bg-secondary px-4 py-2.5 text-sm">
+            <span className="flex items-center gap-2 text-text-secondary min-w-0">
+              <Bot size={15} className="shrink-0" />
+              <span className="truncate">{engineName}</span>
+            </span>
+            <span
+              className={[
+                'rounded-full px-2 py-0.5 text-xs font-semibold shrink-0',
+                isDefaultEngine ? 'bg-accent/15 text-accent' : 'bg-bg-elevated text-text-muted',
+              ].join(' ')}
+            >
+              {isDefaultEngine ? 'Default' : 'Custom'}
+            </span>
+          </div>
+        )}
+
         {/* Advanced settings — only meaningful with the engine on */}
         {engineOn && (
           <AdvancedSettings
             bots={config.bots}
             botId={state.botId}
             lineCount={state.lineCount}
+            defaultBotId={config.default_bot_id}
+            defaultLineCount={config.default_line_count}
             onApply={changeSettings}
           />
         )}

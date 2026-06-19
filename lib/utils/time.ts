@@ -18,6 +18,18 @@ export function isCriticalTime(ms: number): boolean {
 }
 
 /**
+ * Renders milliseconds as a PGN-standard clock annotation: "H:MM:SS" (e.g. "0:04:59",
+ * "1:01:01"). Negative values clamp to "0:00:00". Used for {[%clk ...]} comments.
+ */
+export function msToPgnClockString(ms: number): string {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000))
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+  return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+}
+
+/**
  * Renders the chess-standard `base+increment` label, e.g. "5+0", "3+2".
  * Falls back to the format id when increment data is missing.
  */

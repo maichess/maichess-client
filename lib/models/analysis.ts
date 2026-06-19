@@ -1,3 +1,7 @@
+import type { ClockSnapshot } from '@/lib/models/match'
+
+export type { ClockSnapshot }
+
 export interface PlayerInfo {
   name?: string
   user_id?: string
@@ -36,6 +40,9 @@ export interface AnalysisGameDetail {
   pgn: string
   created_at: string
   tags: Record<string, string>
+  // Per-move remaining-clock snapshots parallel to `moves`; absent or empty when the
+  // game carried no clock data (FEN import, clock-less PGN, or a pre-feature match).
+  clock_history?: ClockSnapshot[]
 }
 
 export interface Bot {

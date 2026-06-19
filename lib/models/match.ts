@@ -15,6 +15,13 @@ export interface TimeFormat {
   category: TimeFormatCategory
 }
 
+// Per-move remaining-clock snapshot, parallel to a game's move list:
+// clock_history[i] holds the clocks after move i.
+export interface ClockSnapshot {
+  white_time_ms: number
+  black_time_ms: number
+}
+
 export interface Match {
   id: string
   white: Player
@@ -27,6 +34,9 @@ export interface Match {
   black_time_ms: number
   last_move_at_ms: number
   analyzable?: boolean
+  // Optional per-move clock snapshots; when present, matchToPgn emits {[%clk ...]}
+  // annotations. Absent for live/legacy matches that carry only the current clocks.
+  clock_history?: ClockSnapshot[]
 }
 
 export interface MatchSummary {
