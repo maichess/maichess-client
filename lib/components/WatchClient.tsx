@@ -32,6 +32,14 @@ export function WatchClient({ initialMatch }: WatchClientProps) {
     const arrivedAt = Date.now()
     setMatch((prev) => {
       if (event.index <= prev.moves.length) return prev
+      // Keep clock_history aligned with moves so the exported PGN stays fully
+      // annotated as the live game advances. Only extend an already-aligned history;
+      // a legacy match with no (or misaligned) history stays as-is, so matchToPgn
+      // degrades cleanly rather than emitting clocks for the wrong moves.
+      const clockHistory =
+        prev.clock_history && prev.clock_history.length === prev.moves.length
+          ? [...prev.clock_history, { white_time_ms: event.white_time_ms, black_time_ms: event.black_time_ms }]
+          : prev.clock_history
       return {
         ...prev,
         current_fen: event.resulting_fen,
@@ -39,6 +47,7 @@ export function WatchClient({ initialMatch }: WatchClientProps) {
         white_time_ms: event.white_time_ms,
         black_time_ms: event.black_time_ms,
         last_move_at_ms: arrivedAt,
+        clock_history: clockHistory,
       }
     })
   }, [])
