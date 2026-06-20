@@ -1,11 +1,16 @@
 import { cookies } from 'next/headers'
-import { notFound, redirect } from 'next/navigation'
+import { redirect } from 'next/navigation'
 import { ROUTES } from '@/lib/constants/routes'
 import type { Match } from '@/lib/models/match'
-import { WatchClient } from '@/lib/components/WatchClient'
+import { WatchBootstrap } from '@/lib/components/WatchBootstrap'
 
 type Props = { params: Promise<{ id: string }> }
 
+// A single SSR read: if the match is already materialised the board renders
+// immediately. Match creation is asynchronous (a bot-vs-bot game emits MatchCreated
+// to Kafka and the read model materialises a moment later), so a brand-new match
+// may not exist yet — rather than 404-ing the spectator away, we hand off to
+// WatchBootstrap, which polls until it appears.
 async function fetchMatch(id: string, cookieHeader: string): Promise<Match | null> {
   const res = await fetch(`${process.env.MATCH_MANAGER_URL}/matches/${id}`, {
     headers: { Cookie: cookieHeader },
@@ -21,7 +26,6 @@ export default async function WatchMatchPage({ params }: Props) {
   if (!cookieStore.has('access_token')) redirect(ROUTES.login)
 
   const match = await fetchMatch(id, cookieStore.toString())
-  if (!match) notFound()
 
-  return <WatchClient initialMatch={match} />
+  return <WatchBootstrap id={id} initialMatch={match} />
 }
