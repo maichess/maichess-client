@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation'
 import { ROUTES } from '@/lib/constants/routes'
 import { useTournament } from '@/lib/hooks/useTournament'
 import { useTournamentBots } from '@/lib/hooks/useTournamentBots'
+import { useRegisteredBots } from '@/lib/hooks/useRegisteredBots'
 import { useTournamentStream } from '@/lib/hooks/useTournamentStream'
 import { TournamentStandings } from './TournamentStandings'
 import { TournamentRounds } from './TournamentRounds'
+import { TournamentAnalytics } from './TournamentAnalytics'
 import { Spinner } from '@/lib/components/ui/Spinner'
 import { Button } from '@/lib/components/ui/Button'
 import type { BotRegistration } from '@/lib/models/tournament'
@@ -16,7 +18,7 @@ interface Props {
   id: string
 }
 
-type Tab = 'standings' | 'rounds'
+type Tab = 'standings' | 'rounds' | 'analytics'
 
 function formatClock(clock: { limit: number; increment: number }): string {
   const mins = Math.floor(clock.limit / 60)
@@ -41,12 +43,14 @@ function StatusBadge({ status }: { status: string }) {
 
 export function TournamentDetail({ id }: Props) {
   const router = useRouter()
-  const { data, loading, error, refresh, startTournament, registerBot, withdrawBot, deleteTournament } = useTournament(id)
+  const { data, loading, error, refresh, startTournament, registerBot, addParticipant, withdrawBot, deleteTournament } = useTournament(id)
   const { bots } = useTournamentBots()
+  const { bots: registeredBots } = useRegisteredBots()
   const [tab, setTab] = useState<Tab>('standings')
   const [actionLoading, setActionLoading] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
   const [selectedBot, setSelectedBot] = useState('')
+  const [selectedRegistryBot, setSelectedRegistryBot] = useState('')
 
   const onStreamEvent = useCallback(() => {
     refresh()
@@ -86,8 +90,13 @@ export function TournamentDetail({ id }: Props) {
   const standings = tournament.standing?.players ?? []
   const isCreated = tournament.status === 'created'
   const isStarted = tournament.status === 'started'
+  const isFinished = tournament.status === 'finished'
+  const tabs: Tab[] = isFinished ? ['standings', 'rounds', 'analytics'] : ['standings', 'rounds']
   const registeredBotIds = new Set(registrations.map((r: BotRegistration) => r.maichess_bot_id))
   const availableBots = bots.filter((b) => !registeredBotIds.has(b.id))
+  // Registry bots that map to a maichess bot and aren't already in this tournament.
+  const availableRegistryBots = registeredBots.filter(
+    (b) => b.maichess_bot_id && !registeredBotIds.has(b.maichess_bot_id))
 
   const inputClass =
     'rounded-lg border border-border bg-bg-elevated px-3 py-2 text-sm text-text-primary focus:border-accent focus:outline-none'
@@ -170,6 +179,37 @@ export function TournamentDetail({ id }: Props) {
             </div>
           )}
 
+          {is_director && availableRegistryBots.length > 0 && (
+            <div className="flex items-center gap-2">
+              <select
+                className={inputClass}
+                value={selectedRegistryBot}
+                onChange={(e) => setSelectedRegistryBot(e.target.value)}
+              >
+                <option value="">Add from registry…</option>
+                {availableRegistryBots.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={!selectedRegistryBot}
+                loading={actionLoading}
+                onClick={() => {
+                  const registry = availableRegistryBots.find((b) => b.id === selectedRegistryBot)
+                  if (!registry?.maichess_bot_id) return
+                  return handleAction(async () => {
+                    await addParticipant(registry.maichess_bot_id!, registry.id)
+                    setSelectedRegistryBot('')
+                  })
+                }}
+              >
+                Add
+              </Button>
+            </div>
+          )}
+
           {is_director && (
             <div className="flex items-center gap-3 pt-2 border-t border-border">
               <Button
@@ -203,7 +243,7 @@ export function TournamentDetail({ id }: Props) {
       )}
 
       <div className="flex items-center gap-0.5 rounded-full border border-border bg-bg-secondary p-0.5 w-fit">
-        {(['standings', 'rounds'] as Tab[]).map((t) => (
+        {tabs.map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -220,6 +260,7 @@ export function TournamentDetail({ id }: Props) {
       <div className="rounded-xl border border-border bg-bg-secondary overflow-hidden">
         {tab === 'standings' && <TournamentStandings standings={standings} />}
         {tab === 'rounds' && <TournamentRounds tournamentId={id} nbRounds={tournament.nbRounds} currentRound={tournament.round} />}
+        {tab === 'analytics' && <TournamentAnalytics id={id} enabled={isFinished} />}
       </div>
     </div>
   )

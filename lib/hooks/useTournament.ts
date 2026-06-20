@@ -51,6 +51,18 @@ export function useTournament(id: string, serverUrl?: string) {
     setFetchKey((k) => k + 1)
   }, [id])
 
+  // Add a permanently-registered bot (registry id) as a participant. Director-only
+  // on the server; reuses the registry entry instead of an ephemeral join.
+  const addParticipant = useCallback(async (botId: string, registryId: string) => {
+    const res = await fetch(`/api/tournaments/${id}/participants`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bot_id: botId, registry_id: registryId }),
+    })
+    if (!res.ok) throw new Error(`Failed to add participant (${res.status})`)
+    setFetchKey((k) => k + 1)
+  }, [id])
+
   const withdrawBot = useCallback(async (botId: string) => {
     const res = await fetch(`/api/tournaments/${id}/register?bot_id=${encodeURIComponent(botId)}`, { method: 'DELETE' })
     if (!res.ok) throw new Error(`Failed to withdraw (${res.status})`)
@@ -62,5 +74,5 @@ export function useTournament(id: string, serverUrl?: string) {
     if (!res.ok) throw new Error(`Failed to delete tournament (${res.status})`)
   }, [id])
 
-  return { data, loading, error, refresh, startTournament, registerBot, withdrawBot, deleteTournament }
+  return { data, loading, error, refresh, startTournament, registerBot, addParticipant, withdrawBot, deleteTournament }
 }

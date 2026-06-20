@@ -112,3 +112,53 @@ export interface RegisteredBot {
   name: string
   maichess_bot_id: string | null
 }
+
+// ── Analytics export (tournament server `AnalyticsExport`, schemaVersion "1.0") ──
+// Raw, versioned tournament data the client analyses itself (see analytics view).
+
+export interface AnalyticsStanding {
+  botId: string
+  botName: string
+  botFamily?: string | null
+  strategyType?: string | null
+  engineType?: string | null
+  modelVersion?: string | null
+  rank: number
+  points: number
+  wins: number
+  draws: number
+  losses: number
+  nbGames: number
+  tieBreak: number
+}
+
+export interface AnalyticsGame {
+  gameId: string
+  round: number
+  whiteBotId: string
+  whiteBotName: string
+  blackBotId: string
+  blackBotName: string
+  winner?: 'white' | 'black' | 'draw' | null
+  winnerBotId?: string | null
+  terminationReason: string
+  totalPly: number
+  moves: string
+  startedAt?: string | null
+  endedAt?: string | null
+  durationMillis?: number | null
+}
+
+export interface TournamentAnalyticsExport {
+  schemaVersion: string
+  tournamentId: string
+  format: string
+  clock: TournamentClock
+  rated: boolean
+  nbRounds: number
+  startedAt?: string | null
+  finishedAt?: string | null
+  exportedAt: string
+  standings: AnalyticsStanding[]
+  games: AnalyticsGame[]
+}

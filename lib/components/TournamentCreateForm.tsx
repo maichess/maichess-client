@@ -27,9 +27,15 @@ const inputClass =
 
 export function TournamentCreateForm({ onCreated }: Props) {
   const { bots, loading: botsLoading } = useTournamentBots()
-  const { openings } = useTournamentOpenings()
+  const { openings, register: registerOpening } = useTournamentOpenings()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const [showAddOpening, setShowAddOpening] = useState(false)
+  const [newOpeningName, setNewOpeningName] = useState('')
+  const [newOpeningFen, setNewOpeningFen] = useState('')
+  const [openingBusy, setOpeningBusy] = useState(false)
+  const [openingError, setOpeningError] = useState<string | null>(null)
 
   const [name, setName] = useState('')
   const [nbRounds, setNbRounds] = useState(5)
@@ -52,6 +58,27 @@ export function TournamentCreateForm({ onCreated }: Props) {
   function toggleOpening(key: string, checked: boolean) {
     setSelectedOpenings((prev) =>
       checked ? [...prev, key] : prev.filter((k) => k !== key))
+  }
+
+  async function handleRegisterOpening() {
+    setOpeningBusy(true)
+    setOpeningError(null)
+    try {
+      const opening = await registerOpening(newOpeningName.trim(), newOpeningFen.trim())
+      // Preselect the freshly registered opening for convenience.
+      if (thematic) {
+        setSelectedOpenings((prev) => [...prev, opening.key])
+      } else {
+        setStartChoice(opening.key)
+      }
+      setNewOpeningName('')
+      setNewOpeningFen('')
+      setShowAddOpening(false)
+    } catch (err) {
+      setOpeningError(err instanceof Error ? err.message : 'Failed to register opening')
+    } finally {
+      setOpeningBusy(false)
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -289,6 +316,47 @@ export function TournamentCreateForm({ onCreated }: Props) {
               )}
             </>
           )}
+
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={() => setShowAddOpening((v) => !v)}
+              className="text-[11px] text-text-muted hover:text-accent transition-colors"
+            >
+              {showAddOpening ? '− Cancel custom opening' : '+ Register a custom opening'}
+            </button>
+
+            {showAddOpening && (
+              <div className="mt-2 space-y-2 rounded-lg border border-border bg-bg-elevated p-3">
+                {openingError && (
+                  <div className="rounded-lg border border-danger/40 bg-danger/10 px-2 py-1 text-[11px] text-danger">
+                    {openingError}
+                  </div>
+                )}
+                <input
+                  className={inputClass}
+                  value={newOpeningName}
+                  onChange={(e) => setNewOpeningName(e.target.value)}
+                  placeholder="Opening name (e.g. London System)"
+                />
+                <input
+                  className={inputClass}
+                  value={newOpeningFen}
+                  onChange={(e) => setNewOpeningFen(e.target.value)}
+                  placeholder="FEN — rnbqkbnr/ppp1pppp/8/3p4/3P1B2/8/PPP1PPPP/RN1QKBNR b KQkq - 2 2"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  loading={openingBusy}
+                  disabled={!newOpeningName.trim() || !newOpeningFen.trim()}
+                  onClick={handleRegisterOpening}
+                >
+                  Save opening
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-2 sm:col-span-2">
